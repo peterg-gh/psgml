@@ -3,7 +3,7 @@
 ;; Copyright (C) 1996 Lennart Staflin
 
 ;; Author: Lennart Staflin <lenst@lysator.liu.se>
-;; Version: $Id: psgml-maint.el,v 1.4 1998/11/15 19:34:41 lenst Exp $
+;; Version: $Id: psgml-maint.el,v 1.5 2001/02/20 22:39:01 lenst Exp $
 ;; Keywords: 
 ;; Last edited: 1996-11-14 17:26:31 lenst
 
@@ -58,7 +58,7 @@
 (defun psgml-find-source-dir (&optional ask)
   (if psgml-source-dir
       t 
-    (let ((cand (list "." "./psgml-1.1.6")))
+    (let ((cand (list "." "./psgml-1.2.2")))
       (while cand
 	(if (file-exists-p (expand-file-name "psgml-maint.el" (car cand)))
 	    (progn

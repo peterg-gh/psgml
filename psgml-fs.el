@@ -2,9 +2,8 @@
 ;; Copyright (C) 1995, 2000 Lennart Staflin
 
 ;; Author: Lennart Staflin <lenst@lysator.liu.se>
-;; Version: $Id: psgml-fs.el,v 1.8 2000/10/11 14:41:22 lenst Exp $
-;; Keywords: 
-;; Last edited: 1999-08-02 20:55:20 lenst
+;; Version: $Id: psgml-fs.el,v 1.11 2001/04/02 22:04:46 lenst Exp $
+;; Keywords:
 
 ;;; This program is free software; you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -31,7 +30,7 @@
 ;; run the emacs command `M-x style-format'.
 
 ;; The style file should contain a single Lisp list. The elements of
-;; this list, are them self lists, describe the style for an element type. 
+;; this list, are them self lists, describe the style for an element type.
 ;; The sublists begin with the generic identifier for the element types and
 ;; the rest of the list are characteristic/value pairs.
 
@@ -56,7 +55,7 @@
 
 (defvar fs-special-styles
   '(top bottom before after hang-from text sub-style title)
-  "Style attribues that should not be entered in the characteristics table.")
+  "Style attributes that should not be entered in the characteristics table.")
 
 
 ;;; Dynamic variables
@@ -79,7 +78,7 @@
   "Accumulate text of paragraph")
 
 (defvar fs-hang-from nil
-  "Hanging indent of current pargraph")
+  "Hanging indent of current paragraph")
 
 (defvar fs-first-indent nil)
 (defvar fs-left-indent nil)
@@ -104,7 +103,7 @@
   (when (> n fs-vspace)
     (fs-add-output (make-string (- n fs-vspace) ?\n))
     (setq fs-vspace n)))
-	   
+
 
 (defun fs-para ()
   (when (if (fs-char 'ignore-empty-para)
@@ -150,7 +149,7 @@
 	(replace-match " "))
       (goto-char (point-min))
       (delete-horizontal-space)
-      (insert 
+      (insert
        (if hang-from
 	   hang-from
 	 (make-string (or first-indent indent) ? )))
@@ -161,16 +160,6 @@
     (fs-add-output (buffer-string) (fs-char 'justification)))
   (sgml-pop-entity)
   (sit-for 0))
-
-(defun fs-element-content (&optional e)
-  (unless e (setq e (fs-element)))
-  (let ((fs-para-acc "") fs-first-indent fs-left-indent)
-    (sgml-map-content e
-		      (function fs-paraform-phrase)
-		      (function fs-paraform-data)
-		      nil
-		      (function fs-paraform-entity))
-    fs-para-acc))
 
 (defun fs-paraform-phrase (e)
   (sgml-map-content e
@@ -225,9 +214,9 @@ The value can be the style-sheet list, or it can be a file name
 (defun fs-do-style (fs-current-element style)
   (let ((hang-from (eval (getf style 'hang-from))))
     (when hang-from
-      (setq fs-hang-from 
+      (setq fs-hang-from
 	    (format "%s%s "
-		    (make-string 
+		    (make-string
 		     (or (fs-char 'hang-left) (fs-char 'left))
 		     ? )
                     hang-from))))
@@ -244,14 +233,14 @@ The value can be the style-sheet list, or it can be a file name
     (let ((before (getf style 'before)))
       (when before
 	(fs-do-style e before)))
-    (cond ((getf style 'text)
-	   (let ((text (eval (getf style 'text))))
-	     (when (stringp text)
-	       (fs-paraform-data text))))
-	  (t
-           (let ((fs-style
-                  (append (getf style 'sub-style)
-                          fs-style)))
+    (let ((fs-style
+           (append (getf style 'sub-style)
+                   fs-style)))
+      (cond ((getf style 'text)
+             (let ((text (eval (getf style 'text))))
+               (when (stringp text)
+                 (fs-paraform-data text))))
+            (t
              (sgml-map-content e
                                (function fs-engine)
                                (function fs-paraform-data)
@@ -311,6 +300,15 @@ The value can be the style-sheet list, or it can be a file name
         (child  (setq element (sgml-element-content element)))))
     element))
 
+(defun fs-element-content (&optional e)
+  (unless e (setq e (fs-element)))
+  (let ((fs-para-acc "") fs-first-indent fs-left-indent)
+    (sgml-map-content e
+		      (function fs-paraform-phrase)
+		      (function fs-paraform-data)
+		      nil
+		      (function fs-paraform-entity))
+    fs-para-acc))
 
 (defun fs-attval (name &optional element)
   (sgml-element-attval (if element element (fs-element))
@@ -346,6 +344,21 @@ The value can be the style-sheet list, or it can be a file name
                 (return-from func nil)))
           (setq element (sgml-element-next element)))))
     nil))
+
+
+(defun fs-split-tokens (s)
+  "Split a string S into a list of tokens."
+  (let ((result nil))
+    (sgml-push-to-string s)
+    (while (not (eobp))
+      (skip-syntax-forward "-")
+      (let ((start (point)))
+        (skip-syntax-forward "^-")
+        (when (/= start (point))
+          (push (buffer-substring-no-properties start (point))
+                result))))
+    (sgml-pop-entity)
+    (nreverse result)))
 
 
 ;;; fs.el ends here

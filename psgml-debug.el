@@ -1,6 +1,6 @@
 ;;;;\filename psgml-debug.el
-;;;\Last edited: 2000-06-07 07:29:59 lenst
-;;;\RCS $Id: psgml-debug.el,v 2.20 2000/09/06 18:01:26 lenst Exp $
+;;;\Last edited: 2001-03-10 00:32:00 lenst
+;;;\RCS $Id: psgml-debug.el,v 2.25 2001/11/04 23:49:01 lenst Exp $
 ;;;\author {Lennart Staflin}
 ;;;\maketitle
 
@@ -27,7 +27,7 @@
   (interactive)
   (setq sgml-dtd-info (sgml-pstate-dtd sgml-buffer-parse-state)
 	sgml-top-tree (sgml-pstate-top-tree sgml-buffer-parse-state))
-  (sgml-find-start-point (point))
+  (sgml-goto-start-point (point))
   (message "%s" (sgml-dump-node sgml-current-tree)))
 
 (defun sgml-dump-tree (arg)
@@ -46,7 +46,7 @@
 	  (progn (set-buffer standard-output)
 		 (erase-buffer))
 	(set-buffer cb))
-    
+
       (sgml-dump-rec (sgml-pstate-top-tree sgml-buffer-parse-state))
 
       ))
@@ -206,9 +206,9 @@
    (t
     (princ (format "%sand-state\n" (make-string indent ? )))
     (sgml-dp-state (sgml-and-state-substate state) (+ 2 indent))
-    (princ (format "%s--next\n" (make-string indent ? )))    
+    (princ (format "%s--next\n" (make-string indent ? )))
     (sgml-dp-state (sgml-and-state-next state)     (+ 2 indent))
-    (princ (format "%s--dfas\n" (make-string indent ? )))        
+    (princ (format "%s--dfas\n" (make-string indent ? )))
     (loop for m in (sgml-and-state-dfas state)
 	  do (sgml-dp-model m (+ indent 2))
 	  (princ (format "%s--\n" (make-string indent ? )))))))
@@ -370,7 +370,7 @@
 	  sgml-copy-moves
 	  ;; is ps*
 	  sgml-do-parameter-entity-ref
-	  ;; 
+	  ;;
 	  sgml-make-primitive-content-token
 	  sgml-push-to-entity
 	  sgml-lookup-entity
@@ -482,7 +482,7 @@
 	    (t
 	     (princ (if (sgml-eltype-mixed et)
                         "mixed\n"
-                      "element\n"))	     
+                      "element\n"))
              (sgml-print-position-in-model el et (point) sgml-current-state)
              (princ "\n\n")
 	     (sgml-princ-names
@@ -545,7 +545,7 @@
                   (setq defl (format "'%s'"
                                      (sgml-default-value-attval defl)))))
 
-           (indent-to 48 1)          
+           (indent-to 48 1)
            (princ defl)
            (terpri)))
       (set-buffer ob))))
@@ -655,19 +655,20 @@
   t)
 
 ;;;; Possible modification to allow setting face on content:
+
 (defun sgml-set-face-for (start end type)
   (let ((face (cdr (assq type sgml-markup-faces))))
     ;;++
-    (if (and (null type) sgml-current-tree) 
+    (if (and (null type) sgml-current-tree)
         (setq face (sgml-element-appdata sgml-current-tree 'face)))
     ;;--
     (cond
      (sgml-use-text-properties
       (let ((inhibit-read-only t)
-	    (after-change-function nil)	; obsolete variable
-	    (before-change-function nil) ; obsolete variable
-	    (after-change-functions nil)
-	    (before-change-functions nil))
+            (after-change-functions nil)
+            (before-change-functions nil)
+            (buffer-undo-list t)
+            (deactivate-mark nil))
 	(put-text-property start end 'face face)
         (when (< start end)
           (put-text-property (1- end) end 'rear-nonsticky '(face)))))
@@ -699,5 +700,97 @@
 	       (setq old-overlay (make-overlay start end))
 	       (overlay-put old-overlay 'sgml-type type)
 	       (overlay-put old-overlay 'face face))))))))
+
+;;;; New Right Button Menu
+
+(define-key sgml-mode-map [S-mouse-3] 'sgml-right-menu)
+
+(defun sgml-right-menu (event)
+  "Pop up a menu with valid tags and insert the choosen tag.
+If the variable sgml-balanced-tag-edit is t, also inserts the
+corresponding end tag. If sgml-leave-point-after-insert is t, the point
+is left after the inserted tag(s), unless the element has som required
+content.  If sgml-leave-point-after-insert is nil the point is left
+after the first tag inserted."
+  (interactive "*e")
+  (let ((end (sgml-mouse-region)))
+    (sgml-parse-to-here)
+    (cond
+     ((eq sgml-markup-type 'start-tag)
+      (sgml-right-stag-menu event))
+     (t
+      (let ((what
+	     (sgml-menu-ask event (if (or end sgml-balanced-tag-edit)
+                                      'element 'tags))))
+	(cond
+	 ((null what))
+	 (end
+	  (sgml-tag-region what (point) end))
+	 (sgml-balanced-tag-edit
+	  (sgml-insert-element what))
+	 (t
+	  (sgml-insert-tag what))))))))
+
+
+(defun sgml-right-stag-menu (event)
+  (let* ((el (sgml-find-attribute-element))
+         (attrib-menu (ignore-errors (sgml-make-attrib-menu el))))
+
+    (let* ((alt-gi (mapcar (function sgml-eltype-name)
+                           (progn
+                             (sgml-find-context-of (sgml-element-start el))
+                             (sgml-current-list-of-valid-eltypes))))
+           (change-menu
+            (cons "Change To"
+                  (loop for gi in alt-gi
+                        collect `(,gi (sgml-change-element-name ,gi))))))
+      (sgml-popup-multi-menu
+       event "Start Tag"
+       (list* change-menu
+             `("Misc"
+               ("Edit attributes" (sgml-edit-attributes))
+               ("Normalize" (sgml-normalize-element))
+               ("Fill" (sgml-fill-element
+                        (sgml-find-context-of (point))))
+               ("Splice" (sgml-untag-element))
+               ("Fold"   (sgml-fold-element)))
+             `("--" "--")
+             attrib-menu)))))
+
+
+
+
+(defun sgml--empty-is-nil (s)
+  (if (equal s "")
+      nil
+    s))
+
+(defun sgml-dl-to-table (border table-width first-col-width)
+  (interactive "sBoder: \nsTab Width: \nsFist Col Width: \n")
+  (setq border (sgml--empty-is-nil border))
+  (setq table-width (sgml--empty-is-nil table-width))
+  (setq first-col-width (sgml--empty-is-nil first-col-width))
+  (let ((el (sgml-find-element-of (point))))
+    (goto-char (sgml-element-etag-start el))
+    (let ((end (point-marker)))
+      (goto-char (sgml-element-start el))
+      (sgml-change-element-name "TABLE")
+      (sgml-insert-attribute "BORDER" border)
+      (sgml-insert-attribute "WIDTH" table-width)
+      (while (search-forward "<" end t)
+        (cond
+         ((looking-at "dt")
+          (backward-char 1)
+          (insert "<tr>")
+          (sgml-change-element-name "TD")
+          (sgml-insert-attribute "WIDTH" first-col-width))
+         ((looking-at "tr>\\s-*<td")
+          (sgml-down-element)
+          (sgml-insert-attribute "WIDTH" first-col-width))
+         ((looking-at "dd")
+          (sgml-change-element-name "TD")
+          (sgml-up-element)
+          (insert "</tr>")))))))
+
 
 ;¤¤\end{codeseg}

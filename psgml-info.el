@@ -1,6 +1,6 @@
 ;;;; psgml-info.el
 ;;; Last edited: 2000-11-09 19:23:50 lenst
-;;; $Id: psgml-info.el,v 2.12 2001/02/08 19:09:25 lenst Exp $
+;;; $Id: psgml-info.el,v 2.13 2001/04/02 22:04:46 lenst Exp $
 
 ;; Copyright (C) 1994, 1995 Lennart Staflin
 
@@ -370,7 +370,7 @@
       (cond ((symbolp (sgml-eltype-model et)) (princ (sgml-eltype-model et)))
 	    (t
 	     (princ (if (sgml-eltype-mixed et) "mixed\n\n"
-                      "element\n\n"))	     
+                      "element\n\n"))
 	     (sgml-princ-names
 	      (mapcar #'symbol-name (sgml-eltype-refrenced-elements et)))))
       (let ((incl (sgml-eltype-includes et))

@@ -1,4 +1,4 @@
-This is psgml-api.info, produced by Makeinfo version 3.12f from
+This is psgml-api.info, produced by makeinfo version 4.0 from
 psgml-api.texi.
 
 START-INFO-DIR-ENTRY
@@ -596,9 +596,9 @@ state is final if there is not required move from that state.
 There is a simple translation to sequence- and or-connectors.  For
 example `(a & b & c)' is can be translated to:
 
-     ((a, b, c) | (a, c, b) |
-      (b, a, c) | (b, c, a) |
-      (c, a, b) | (c, b, a))
+     ((a, ((c, b) | (b, c))) |
+      (b, ((a, c) | (c, a))) |
+      (c, ((a, b) | (b, a))) )
 
    But this grows too fast to be of direct practical use.  PSGML
 represents an AND-group with one DFA for every (SGML) token in the
@@ -757,15 +757,15 @@ Index
 
 
 Tag Table:
-Node: Top944
-Node: Types1528
-Node: element2247
-Node: attribute6167
-Node: parser state10164
-Node: DTD10752
-Node: entities11381
-Node: Hooks13296
-Node: Implementation15028
-Node: Index24611
+Node: Top942
+Node: Types1526
+Node: element2245
+Node: attribute6165
+Node: parser state10162
+Node: DTD10750
+Node: entities11379
+Node: Hooks13294
+Node: Implementation15026
+Node: Index24613
 
 End Tag Table
