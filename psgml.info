@@ -1,0 +1,1049 @@
+This is Info file psgml.info, produced by Makeinfo-1.55 from the input
+file psgml.texi.
+
+   Documentation for PSGML, a major mode for SGML.
+
+   Copyright 1994 Lennart Staflin
+
+   Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+   Permission is granted to copy and distribute modified versions of
+this manual under the conditions for verbatim copying, and provided
+that the entire resulting derived work is distributed under the terms
+of a permission notice identical to this one.
+
+   Permission is granted to copy and distribute translations of this
+manual into another language, under the above conditions for modified
+versions, except that this permission notice may be stated in a
+translation approved by the Free Software Foundation.
+
+
+File: psgml.info,  Node: Top,  Next: Limitations,  Prev: (dir),  Up: (dir)
+
+PSGML
+*****
+
+   PSGML is a major mode for editing SGML documents.  It works with GNU
+Emacs 19.19 and later or with Lucid Emacs 19.9 and later.  PSGML
+contains a simple SGML parser and can work with any DTD.  Functions
+provided includes menus and commands for inserting tags with only the
+contextually valid tags, identification of structural errors, editing of
+attribute values in a separate window with information about types and
+defaults, and structure based editing.
+
+   This is the documentation for PSGML version 0.4.
+
+* Menu:
+
+* Limitations::                 Limitations
+* Install::                     How to install PSGML
+* Invoke::                      How to invoke PSGML
+* Validate::                    Running an external SGML parser
+* SGML declaration::            Using an SGML declaration
+* Managing the DTD::            Specifying what DTD to use
+* Edit::                        Commands for editing
+* Display::                     Appearance of text in the buffer
+* Bugs::                        Reporting bugs
+* Index::
+
+ -- The Detailed Node Listing --
+
+Commands for editing
+
+* Insert::                      Inserting Markup
+* Complete::                    Markup completion
+* Information::                 Showing information
+* Indent::                      Indentation according to structure
+* Move::                        Move in the element structure
+* Attributes::                  Editing attributes
+* Change and delete::           Changing and deleting markup
+
+Appearance of text in the buffer
+
+* Fold::                        Folding editing
+* Highlight::                   Highlighting markup
+
+
+File: psgml.info,  Node: Limitations,  Next: Install,  Prev: Top,  Up: Top
+
+Limitations
+***********
+
+   * Can not handle SHORTREF or variant concrete syntaxes, though it
+     does allow unlimited length names.  I suppose you can say that it
+     accepts the "Core concrete syntax".
+
+   * Assumes that general entity references can be treated as data.
+
+   * The features CONCUR, DATATAG, LINK and RANK are not supported.
+
+
+File: psgml.info,  Node: Install,  Next: Invoke,  Prev: Limitations,  Up: Top
+
+Installing PSGML
+****************
+
+   Place the `*.el' and the `*.elc' files in a directory where Emacs
+can find it (i.e. one of the directories in the `load-path' variable,
+you can add a directory to this variable in your `.emacs'.)  If you
+obtained PSGML without `*.elc' files, you can create them by letting
+Emacs byte compile the `*.el' files (use `M-x byte-compile-file').
+Parsing SGML in Emacs Lisp is slow and needs all the speed it can get.
+
+   Put the following line in your .emacs:
+
+     (autoload 'sgml-mode "psgml" "Major mode to edit SGML files." t )
+
+Modify search path for external entities
+========================================
+
+   SGML can refer to external files (really entities) either with public
+identifiers or with system identifiers.  PSGML uses the variable
+`sgml-public-map' to map public identifiers to file names.
+
+   A public identifier looks like
+
+     PUBLIC "ISO 8879:1986//ENTITIES Added Latin 1//EN"
+
+where "ISO 8879:1986" is the owner, "ENTITIES" is the text class and
+"Added Latin 1" is the text description (and "EN" is language).  With
+the default setting of `sgml-public-map' Emacs would look for this file
+in
+
+     /usr/local/lib/sgml/ISO_8879:1986/entities/Added_Latin_1
+
+   Note: blanks are transliterated to `_' (and also `/' to `%') and the
+text class is down cased.
+
+   The default for `sgml-public-map' giving the above path is
+
+     ("/usr/local/lib/sgml/%o/%c/%d")
+
+   The `sgml-public-map' variable can contain a list of file name
+templates where `%P' will be substituted with the whole public
+identifier, owner is substituted for `%O', public text class for `%C',
+and public text description for `%D'.  The text class will be converted
+to lower case and the owner and description will be transliterated
+according to the variable `sgml-public-transliterations'.  The
+templates in the list is tried in order until an existing file is
+found.  An element can also be a dotted pair `(REGEXP . FILENAME)', the
+FILENAME is a string treated as above, but only if the regular
+expression, REGEXP, matches the public identifier.
+
+   A system identifier looks like
+
+     SYSTEM "htmlplus.dtd"
+
+where "htmlplus.dtd" is a system-specific identifier. PSGML treats
+system identifiers as file names and looks for them in the directories
+listed in the variable `sgml-system-path' (default is either in current
+directory or in `~/sgml').
+
+
+File: psgml.info,  Node: Invoke,  Next: Validate,  Prev: Install,  Up: Top
+
+How to invoke PSGML
+*******************
+
+   PSGML defines a major mode called `sgml-mode'.  Files with
+extensions `.sgml', `.sgm' or `.dtd' will automatically be edited in
+SGML mode.  To edit some other file in sgml mode, type `M-x sgml-mode
+RET' after finding the file.
+
+   If you can modify the file you can add a "Local Variables" list
+(*note Local Variables in Files: (emacs)file variables.) to the end of
+the file.  This can make Emacs automatically set sgml mode and user
+options when the file is loaded.  The simplest Local Variables list
+would look like:
+
+     <!--
+     Local Variables:
+     mode: sgml
+     End:
+     -->
+
+   You can also put a line at the top of the file to tell emacs to use
+sgml mode:
+
+     <!-- -*- sgml -*- -->
+
+   But remember that you can't have a comment before the *SGML
+declaration*.
+
+
+File: psgml.info,  Node: Validate,  Next: SGML declaration,  Prev: Invoke,  Up: Top
+
+Running an external SGML parser
+*******************************
+
+   PSGML can not validate an SGML document (see below what it can and
+can't do).  If you have a validating SGML parser, like `sgmls', you can
+run the parser on your file with the command `C-c C-v'
+(`sgml-validate').
+
+   Some variables control this function:
+
+ - User Option: sgml-validate-command
+     The command to validate an SGML document.  The file name of
+     current buffer's file will be appended to this, separated by a
+     space.  Default is `sgml -s'.
+
+ - User Option: sgml-declaration
+     If this is a string this will be inserted before the file name when
+     running the `sgml-validate-command'.
+
+ - User Option: sgml-offer-save
+     If non-nil, `C-c C-v' (`sgml-validate') will ask about saving
+     modified buffers before running the validate command.
+
+   The built-in parser can find some markup errors.  The command `C-c
+C-o' (`sgml-next-trouble-spot') is the best way to use the built-in
+parser for this.  To check the whole file go to the beginning of the
+buffer and use `C-c C-o'.
+
+   Some of the markup errors not found are:
+
+   * Errors in the SGML declaration.
+
+   * Errors in attribute specifications.
+
+   * Markup errors in entity replacement text.
+
+   * Omitted start-tags for empty elements.
+
+
+File: psgml.info,  Node: SGML declaration,  Next: Managing the DTD,  Prev: Validate,  Up: Top
+
+Using an SGML declaration
+*************************
+
+   PSGML does not understand the SGML declaration, it accepts one in the
+file but it is ignored.  If you have the SGML declaration in another
+file you can make `sgmls' use it when you use the `C-c C-v'
+(`sgml-validate') command (*note Validate::.).
+
+   PSGML has some options in what features it uses and what markup it
+creates.  You have to set these options to make PSGML's behaviour
+consistent with your SGML declaration and personal preferences.
+
+ - User Option: sgml-omittag
+     Set this to `t' if the SGML declaration has `OMITTAG YES' and to
+     `nil' otherwise.
+
+ - User Option: sgml-shorttag
+     Set this to `t' if the SGML declaration has `SHORTTAG YES' and to
+     `nil' otherwise.
+
+ - User Option: sgml-always-quote-attributes
+     If non-nil, quote all attribute values inserted after finishing
+     edit attributes.  If this variable is `nil' and `sgml-shorttag' is
+     non-`nil', attribute values that consists of only name characters
+     will not be quoted.
+
+ - User Option: sgml-minimize-attributes
+     Determines minimization of attributes inserted by edit-attributes.
+     If non-nil, omit attribute name if the attribute value is from a
+     token group.  If `max', omit attributes with default value.
+     Minimization will only be done if they produce legal SGML (assuming
+     `sgml-omittag' and `sgml-shorttag' are set correctly).
+
+
+File: psgml.info,  Node: Managing the DTD,  Next: Edit,  Prev: SGML declaration,  Up: Top
+
+Managing the DTD
+****************
+
+   PSGML needs to know about the DTD you are using for many of its
+commands.  You can use PSGML without specifying a DTD, it will then
+accept any tags and assume a content model of `ANY' with no omissible
+tags.
+
+   If you have a `DOCTYPE' declaration in your file, PSGML will try to
+parse this.  Either the first time you do something that needs to parse
+the document or with the command `sgml-parse-prolog'.  Big DTDs take
+some time to parse.
+
+   You can have the `DOCTYPE' declaration in another file either by
+setting `sgml-parent-document' to the other file or by creating a saved
+DTD and setting `sgml-default-dtd-file' to that file.  If
+`sgml-default-dtd-file' contains a relative file name, the directories
+in `sgml-system-path' will be searched for the file.
+
+   If parsing the DTD takes too long time you can save the parsed DTD
+in a file using the command `M-x sgml-save-dtd'.  Next time PSGML can
+load that file instead of parsing the DTD.  For PSGML to find the saved
+DTD you must either save the DTD using the default name or do a `M-x
+sgml-save-options' after saving the DTD.  To directly use an already
+parsed and saved DTD, load the file containing the saved DTD with the
+command `M-x sgml-load-dtd'.
+
+   When the DTD has been parsed or loaded the name of the document
+element will be displayed in the mode line inside brackets.  If there
+was an error parsing the DTD or there is no DTD, the mode line will
+display `[ANY]'.
+
+ - User Option: sgml-default-dtd-file
+     This is the default file name for saved DTD.  This is set by
+     `sgml-mode' to the buffer file name less extension plus the
+     extension `.ced', if that file exists.  Can be changed in the Local
+     variables section of the file.
+
+ - User Option: sgml-parent-document
+     This can be set to the name (a string) of a file containing the
+     `DOCTYPE' declaration to use, or a list `(FILENAME DOCTYPENAME)',
+     where FILENAME is the name of a file containing the `DOCTYPE'
+     declaration to use, with the modification that the document type
+     name is DOCTYPENAME.
+
+   If you change the doctype you must execute `sgml-parse-prolog',
+changes in the doctype are not automatically recognised.
+
+ - User Option: sgml-custom-dtd
+     Menu entries to be added to the DTD menu.  The value should be a
+     list of entries to be added to the DTD menu.
+
+     Every entry should be a list. The first element of the entry is a
+     string used as the menu entry.  The second element is a string
+     containing a doctype declaration (this can be nil if no doctype).
+     The rest of the list should be a list of variables and values.
+     For backward compatibility a single string instead of a variable
+     is assigned to `sgml-default-dtd-file'.  All variables are made
+     buffer local and are also added to the buffers local variables
+     list.
+
+     When an entry is selected from the DTD menu, the doctype
+     declaration will be inserted, the variables will be set to the
+     values in the entry and a local variables list will be created in
+     the buffer.
+
+     Example:
+
+             (("HTML" nil
+               sgml-default-dtd-file "~/sgml/html.ced"
+               sgml-omittag nil sgml-shorttag nil)
+              ("HTML+" "<!doctype htmlplus system 'htmlplus.dtd'>"
+               "~/sgml/htmlplus.ced"
+               sgml-omittag t sgml-shorttag nil)
+              ("DOCBOOK" "<!doctype docbook system 'docbook.dtd'>"
+               "~/sgml/docbook.ced"
+               sgml-omittag nil sgml-shorttag t)))
+
+
+File: psgml.info,  Node: Edit,  Next: Display,  Prev: Managing the DTD,  Up: Top
+
+Commands for editing
+********************
+
+* Menu:
+
+* Insert::                      Inserting Markup
+* Complete::                    Markup completion
+* Information::                 Showing information
+* Indent::                      Indentation according to structure
+* Move::                        Move in the element structure
+* Attributes::                  Editing attributes
+* Change and delete::           Changing and deleting markup
+
+
+File: psgml.info,  Node: Insert,  Next: Complete,  Prev: Edit,  Up: Edit
+
+Inserting Markup
+================
+
+   The commands that insert start-tags works only if the document has an
+associated DTD.
+
+   Keyboard commands for inserting:
+
+`C-c <'
+     Will ask, for the tag to insert, in the mini-buffer with
+     completion on the tags that are valid at point (`sgml-insert-tag').
+
+     If the option `sgml-balanced-tag-edit' is non-nil, inserting a
+     start-tag will also insert the corresponding end-tag.  If, in
+     addition, `sgml-auto-insert-required-elements' is non-nil, tags
+     for elements required between the inserted tags will also be
+     inserted.
+
+     The list of valid tags, computed for a position in the buffer, will
+     contain:
+
+       1. The end-tag for the current element, if it can be ended at
+          the position and `sgml-balanced-tag-edit' is nil.
+          Furthermore it will contain end-tags for enclosing elements
+          if the necessary omissible end-tag declarations have been
+          made in the DTD.
+
+       2. The start-tags of all elements that could occur after point.
+          If `sgml-omittag-transparent' is nil, the above will be
+          limited to the elements that can occur within the current
+          element.
+
+`C-c C-e'
+     Insert start and end-tags for an element (`sgml-insert-element').
+     The name of the element is read from the mini-buffer with
+     completion on valid elements.
+
+     If `sgml-omittag-transparent' is nil, the list of valid elements
+     will only contain the elements that can be in the content of the
+     current element.
+
+     Required elements in the content will be automatically inserted if
+     the option `sgml-auto-insert-required-elements' is non-nil.
+
+`C-c C-r'
+     Makes the region into a new element (`sgml-tag-region').  Reads
+     element name from mini-buffer with completion as for `C-c C-e'.
+
+`C-c /'
+     Inserts an end-tag for the current element (`sgml-insert-end-tag').
+
+`C-c RET'
+     Split the current element at point.  If repeated, the containing
+     element will be split before the beginning of then current element.
+
+     Typical use is to start a new paragraph element when inside a
+     paragraph.
+
+`C-c +'
+     Read attribute name and value from mini-buffer and insert attribute
+     specification (`sgml-insert-attribute').  If point is immediately
+     after a start-tag, this command operates on that start-tag.
+     Otherwise the command will operate on the element after point.
+
+     The attribute name will be read with completion.  If the attribute
+     has a token list as declared value the attribute value will also
+     be read with completion.  The prompt for attribute value will
+     typically look like:
+
+          Value for ATTRIBUTE (TYPE Default: CURRENT VALUE):
+
+   Menu bar:
+
+`Markup'
+     Selecting from this menu will insert markup.  The menu contains
+     sub menus with tags and with entities, some other markup and a user
+     defined section.
+
+     Sub menus:
+
+`Insert element'
+     Pops up a menu of valid elements and insert start and end-tags for
+     the selected element.  Selections from the menu works like the `C-c
+     C-e' command.
+
+`Insert start-tag'
+     Pops up a menu of valid start-tags and insert the selected tag.
+     The menu has the same start-tags as the completion list for `C-c
+     <'.
+
+`Insert end-tag'
+     Pops up a menu of valid end-tags and insert the selected tag.
+
+`Tag region'
+     Pops up a menu of valid elements and tag the region with the
+     selection.  Selections from the menu works like the `C-c C-r'
+     command.
+
+`Insert entity'
+     Menu of all general entities defined in the DTD.
+
+`Insert attribute'
+     Pops up a menu with all the attributes of an element.  The element
+     is either the one which start-tag is immediately before point or
+     the element after point.  Selecting from this menu edits the
+     attribute specification list for the element.
+
+     The menu has a sub menu for every attribute which declared value
+     is a token list.  The rest of the attributes are collected in one
+     sub menu.  For the token list attributes, selecting a value will
+     insert that attribute-value pair.  Selecting some other attribute
+     reads the attribute-value from the mini-buffer and inserts the
+     attribute value pair.
+
+   A menu is also available directly with a mouse button click in the
+buffer.  In GNU Emacs it is the first mouse button combined with shift
+(`S-mouse-1').  In Lucid Emacs it is bound to the third mouse button.
+The mouse button click will pop-up a menu of valid tags or a menu of
+attributes if the point is in a start-tag.  The attributes menu works
+as the "Insert attribute" menu from the menu-bar.  The tags list is the
+list of valid tags described above for command `C-c <'.  Selection from
+the tags menu works like the `C-c <' command, with the following
+exception:
+
+   You can tag a region, with start and end-tag.  There are two ways to
+indicate the region to mark:
+
+  1. Use the normal mouse commands to mark region.
+
+     For this to work you must either use "transient mark mode" (*note
+     Transient Mark Mode: (emacs)Transient Mark.) or set the option
+     `sgml-tag-region-if-active' to non-nil (don't set this unless you
+     are sure that you want it).
+
+  2. Alternatively make a secondary selection, this is done by holding
+     down the meta key and using the mouse buttons.  *Note Secondary
+     selection: (emacs)Secondary selection.  Some window managers
+     intercept these events, which makes it hard use the secondary
+     selection in Emacs.
+
+ - User Option: sgml-balanced-tag-edit
+     If non-nil, inserting a start-tag will also insert the
+     corresponding end-tag.
+
+ - User Option: sgml-auto-insert-required-elements
+     If non-nil, automatically inserts required elements in the content
+     of an inserted element.
+
+ - User Option: sgml-omittag-transparent
+     If non-nil, will show legal tags inside elements with omissible
+     start-tags and legal tags beyond omissible end-tags.
+
+ - User Option: sgml-tag-region-if-active
+     If non-nil, the `Insert tags' menu will tag a region if the region
+     is considered active by emacs.  If nil, region must be active and
+     `transient-mark-mode' must be on for the region to be tagged.
+
+ - User Option: sgml-custom-markup
+     Menu entries to be added to the Markup menu.  The value should be
+     a list of lists of two strings.  The first string is the menu line
+     and the second string is the text inserted when the menu item is
+     selected.  The second string can contain a `\r' where the cursor
+     should be left.  Also, if a selection is made according to the
+     same rules as for the `S-mouse-1' menu, the selection is replaced
+     with the second string and `\r' is replaced with the selection.
+
+     Example:
+
+            (("Version1" "<![%Version1[\r]]>")
+             ("New page"  "<?NewPage>"))
+
+
+File: psgml.info,  Node: Complete,  Next: Information,  Prev: Insert,  Up: Edit
+
+Markup completion
+=================
+
+   If you are typing in markup directly, `M-TAB' will help you by
+completing a tag name, an entity name or a markup declaration name.  If
+you type `M-TAB' after a plain word, `ispell-complete-word' will be
+invoked instead.
+
+   If you have typed (-!- marks the position of point)
+
+     &At-!-
+
+and type `M-TAB' (assuming you use the `ISOLat1' entity set) you get:
+
+     &Atilde-!-
+
+
+File: psgml.info,  Node: Information,  Next: Indent,  Prev: Complete,  Up: Edit
+
+Showing information
+===================
+
+   Commands for showing information obtained by parsing the buffer.
+
+`C-c C-c'
+     Shows in the message area: context at point, if in a tag or in
+     mixed content and the open elements (`sgml-show-context').
+
+`C-c C-w'
+     Shows what element the character after point (under the cursor)
+     belongs to; also shows context of element (`sgml-what-element').
+
+`C-c C-t'
+     List contextually valid tags (`sgml-list-valid-tags').  Displays
+     information about current element, all valid end-tags, valid
+     start-tags in current element, and start-tags valid at this point
+     but in other elements together with the tags omitted.
+
+   You can make the mode-line display the name of the current open
+element by setting the `sgml-live-element-indicator' variable.  Setting
+this will make all commands slower due to the work needed to keep the
+mode-line up to date.
+
+ - User Option: sgml-live-element-indicator
+     If non-nil, indicate current element in mode line.
+
+     NOTE: Setting this implies that every command can cause a parse.
+
+
+File: psgml.info,  Node: Indent,  Next: Move,  Prev: Information,  Up: Edit
+
+Indentation according to structure
+==================================
+
+   You can indent a line according to the depth of element nesting at
+the beginning of the line.  To indent the current line use `TAB'.  You
+can also use `LFD' (`newline-and-indent') to start a new line with
+correct indentation.
+
+ - User Option: sgml-indent-step
+     How much to increment indent for every element level.  If nil, no
+     indentation.
+
+     If this is nil, `TAB' will insert a tab instead of indenting.
+
+ - User Option: sgml-indent-data
+     If non-nil, indent in data/mixed context also.
+
+
+File: psgml.info,  Node: Move,  Next: Attributes,  Prev: Indent,  Up: Edit
+
+Move in the element structure
+=============================
+
+   These commands move in the element structure.  The commands uses
+knowledge of SGML syntax, and if available the specific DTD.
+
+`C-M-a'
+     Move to the (content) beginning of the current element
+     (`sgml-beginning-of-element').
+
+`C-M-e'
+     Move to the (content) end of the current element
+     (`sgml-end-of-element').
+
+`C-M-f'
+     Move forward by element (`sgml-forward-element').
+
+`C-M-b'
+     Move backward by element (`sgml-backward-element').
+
+`C-M-u'
+     Move up to before current element (`sgml-backward-up-element').
+
+`C-c C-n'
+     Move up to after current element (`sgml-up-element').
+
+`C-M-d'
+     Move down to the (content) beginning of the next element
+     (`sgml-down-element').
+
+`C-c C-d'
+     Move to the next place where data is allowed
+     (`sgml-next-data-field').
+
+   You can also move to the next place where there is some structural
+error with `C-c C-o' (*note Validate::.).
+
+
+File: psgml.info,  Node: Attributes,  Next: Change and delete,  Prev: Move,  Up: Edit
+
+Editing attributes
+==================
+
+   If you want to change the attributes of a start-tag you can simply
+edit them directly in the buffer.  Or you can place the cursor at or
+after the start-tag and use the `sgml-edit-attributes' command,
+available from the `SGML'-menu or on `C-c C-a'.  This will create a new
+Emacs window with all possible attributes listed in the form
+
+     ATTRIBUTE NAME = CURRENT VALUE.
+
+   The CURRENT VALUE may be shown as `#DEFAULT' if the attribute has
+not been given a value in the start-tag.  The list also contains the
+attributes declaration as a comment.  Note also that the CURRENT VALUE
+is show without eventual quotes.
+
+   It is now possible to edit the attribute values.  You can move to the
+next attribute with `TAB'.  If you want to let an attribute have its
+default value use `C-c C-d', this will insert a `#DEFAULT' in the value
+field.
+
+   If Emacs is running in an X window, the `#DEFAULT' will be
+underlined to distinguish it from normal values.
+
+   Finish the editing with `C-c C-c'; this will replace the attribute
+values in the main buffer with those edited.  Note that values will be
+quoted as needed.
+
+   If you want to abort the editing, you can remove the window with
+`C-x 0' or if you want it neat, kill the buffer and remove the window.
+
+   Some other keys are:
+`C-a'
+     Go to the beginning of the value field
+     (`sgml-edit-attrib-field-end').
+
+`C-e'
+     Go to the end of the value field (`sgml-edit-attrib-field-end').
+
+`C-c C-k'
+     Clear the value field (`sgml-edit-attrib-clear').
+
+`C-c C-d'
+     Set the value field to `#DEFAULT' (`sgml-edit-attrib-default').
+     This is a special value that will make the attribute be implied.
+
+
+File: psgml.info,  Node: Change and delete,  Prev: Attributes,  Up: Edit
+
+Changing and deleting markup
+============================
+
+`C-c ='
+     Change the name of the current element
+     (`sgml-change-element-name').  Tries to translate attribute
+     specifications.  An attribute will be translated to an attribute
+     with the same name.  If the new element has no attribute with the
+     same name, the attribute will be ignored.  If there is an
+     attribute with the same name but different declared content, a
+     warning is given.
+
+     ID attributes are handled specially, an attribute with declared
+     value ID will always be translated to the attribute with declared
+     value ID.
+
+`C-c C-k'
+     Kill next tag, markup declaration or process instruction
+     (`sgml-kill-markup').
+
+`C-M-k'
+     Kill the element following the cursor (`sgml-kill-element').
+
+`C-c -'
+     Remove tags from current element (`sgml-untag-element').
+
+`C-c #'
+     Convert character after point to a character reference
+     (`sgml-make-character-reference').  If called with a numeric
+     argument, convert a character reference back to a normal character.
+
+`C-c C-q'
+     Fills an element as a paragraph (`sgml-fill-element').  This is a
+     substitute for the normal `fill-paragraph'.  The command uses
+     heuristics to decide what should be a paragraph.
+
+       1. If point is in an element content, recursively fill the
+          sub-elements.
+
+       2. Find the biggest element with mixed content containing point.
+
+       3. If the above element is mixed but contains elements with pure
+          element content then fill what is between the pure elements
+          as paragraphs and fill the pure elements recursively.
+
+`M-x sgml-normalize'
+     Normalize the document in the buffer.  This will
+
+       1. insert missing tags,
+
+       2. replace minimized tags with full tags,
+
+       3. fix attribute specification lists according to options set.
+
+     There is one option for the normalize command.  With its default
+     value, normalize may actually change the data content of some
+     elements.  But only by removing some white-space from the end of
+     elements with omitted end-tags.
+
+ - User Option: sgml-normalize-trims
+     If non-nil, `sgml-normalize' will trim off white space from end of
+     element when adding end-tag.
+
+     Default: `t'.
+
+
+File: psgml.info,  Node: Display,  Next: Bugs,  Prev: Edit,  Up: Top
+
+Appearance of text in the buffer
+********************************
+
+* Menu:
+
+* Fold::                        Folding editing
+* Highlight::                   Highlighting markup
+
+
+File: psgml.info,  Node: Fold,  Next: Highlight,  Prev: Display,  Up: Display
+
+Folding editing
+===============
+
+   With these commands you can make parts of the text temporarily
+invisible to make it easier to see the overall structure of your text.
+
+   When folding a region all the lines but the first will be invisible.
+The first line of the region will still be visible with an ellipsis at
+the end.
+
+   *Note Outline Mode: (emacs)Outline Mode.
+
+`C-c C-f C-r'
+     The region between point and mark will be folded
+     (`sgml-fold-region').
+
+`C-c C-f C-e'
+     The region between the start and end of the current element will be
+     folded (`sgml-fold-element').
+
+     This command can also fold the SGML declaration or the DOCTYPE
+     declaration.
+
+`C-c C-f C-s'
+     Fold all the sub elements of the current element
+     (`sgml-fold-subelement').
+
+`C-c C-s'
+`C-c C-u C-l'
+     Unfold the current line, assuming it is the first line of a folded
+     region (`sgml-unfold-line').
+
+`C-c C-u C-e'
+     Make all lines in current element visible (`sgml-unfold-element').
+
+`C-c C-u C-a'
+     Make all lines in current buffer visible (`sgml-unfold-all').
+
+`C-c C-f C-x'
+     Unfold current element and then fold the subelements
+     (`sgml-expand-element').  If the current element is folded this
+     expands what is visible.
+
+
+File: psgml.info,  Node: Highlight,  Prev: Fold,  Up: Display
+
+Highlighting markup
+===================
+
+   PSGML can highlight the markup as it parses it by giving the markup a
+different "face" (*note Using Multiple Typefaces: (emacs)Faces.).  The
+highlighting will only be done if the variable `sgml-set-face' is
+non-nil.  The default settings make tags bold and comments italic, but
+this can be modified with the variable `sgml-markup-faces'.
+
+   Markup will only be highlighted when it has actually been parsed.
+The command `C-c C-c' will parse up to point and thus highlight all
+markup before the cursor.  If you want to process the whole buffer you
+can go to then end of the buffer and type `C-c C-c'.  In combination
+with the live display of current element name, by setting
+`sgml-live-element-indicator' to `t', changes to the buffer will in
+most cases be automatically highlighted.
+
+   To remove the highlighting type `M-x sgml-clear-faces'.
+
+ - User Option: sgml-set-face
+     If non-nil, psgml will set the face of parsed markup.
+
+ - User Option: sgml-markup-faces
+     Alist of markup to face mappings.  Each element looks like
+     `(MARKUP-TYPE . FACE)'.  Possible values for MARKUP-TYPE is:
+
+    `comment'
+          comment declaration
+
+    `doctype'
+          doctype declaration
+
+    `end-tag'
+          end-tag
+
+    `ignored'
+          ignored marked section
+
+    `ms-start'
+          marked section end, if not ignored
+
+    `ms-end'
+          marked section start, if not ignored
+
+    `pi'
+          processing instruction
+
+    `sgml'
+          SGML declaration
+
+    `start-tag'
+          start-tag
+
+
+File: psgml.info,  Node: Bugs,  Next: Index,  Prev: Display,  Up: Top
+
+Bugs
+****
+
+   If you encounter something that you think is a bug, please report
+it.  Try to include a clear description of the undesired behaviour.  A
+test case that exhibits the bug, would also be useful.
+
+   You can report a bug with the command `M-x sgml-submit-bug-report'.
+
+   When PSGML needs contextual information it parses the document up to
+the point. During the parsing, it builds a parse tree.  The parse tree
+is used to initialise the next parse, to avoid having to parse things
+already parsed.  Changes to the buffer is supposed to prune the tree of
+all outdated information.  But if you get strange complaints from the
+parser, try and back up a bit and use `C-c C-o'
+(`sgml-next-trouble-spot').
+
+
+File: psgml.info,  Node: Index,  Prev: Bugs,  Up: Top
+
+Index
+*****
+
+* Menu:
+
+* LFD:                                  Indent.
+* TAB:                                  Attributes.
+* TAB:                                  Indent.
+* C-a:                                  Attributes.
+* C-c #:                                Change and delete.
+* C-c +:                                Insert.
+* C-c -:                                Change and delete.
+* C-c /:                                Insert.
+* C-c <:                                Insert.
+* C-c =:                                Change and delete.
+* C-c C-a:                              Attributes.
+* C-c C-c:                              Attributes.
+* C-c C-c:                              Information.
+* C-c C-c:                              Highlight.
+* C-c C-d:                              Attributes.
+* C-c C-d:                              Attributes.
+* C-c C-d:                              Move.
+* C-c C-e:                              Insert.
+* C-c C-f C-e:                          Fold.
+* C-c C-f C-r:                          Fold.
+* C-c C-f C-s:                          Fold.
+* C-c C-f C-x:                          Fold.
+* C-c C-k:                              Attributes.
+* C-c C-k:                              Change and delete.
+* C-c C-n:                              Move.
+* C-c C-o:                              Validate.
+* C-c C-q:                              Change and delete.
+* C-c C-r:                              Insert.
+* C-c C-s:                              Fold.
+* C-c C-t:                              Information.
+* C-c C-u C-a:                          Fold.
+* C-c C-u C-e:                          Fold.
+* C-c C-u C-l:                          Fold.
+* C-c C-v:                              Validate.
+* C-c C-w:                              Information.
+* C-c RET:                              Insert.
+* C-e:                                  Attributes.
+* C-M-a:                                Move.
+* C-M-b:                                Move.
+* C-M-d:                                Move.
+* C-M-e:                                Move.
+* C-M-f:                                Move.
+* C-M-k:                                Change and delete.
+* C-M-u:                                Move.
+* CONCUR:                               Limitations.
+* DATATAG:                              Limitations.
+* DOCTYPE:                              Managing the DTD.
+* entity reference:                     Limitations.
+* external identifier:                  Install.
+* invoke:                               Invoke.
+* LINK:                                 Limitations.
+* M-TAB:                                Complete.
+* major mode:                           Invoke.
+* newline-and-indent:                   Indent.
+* OMITTAG:                              SGML declaration.
+* public identifier:                    Install.
+* RANK:                                 Limitations.
+* S-mouse-1:                            Insert.
+* sgml-always-quote-attributes:         SGML declaration.
+* sgml-auto-insert-required-elements:   Insert.
+* sgml-backward-element:                Move.
+* sgml-backward-up-element:             Move.
+* sgml-balanced-tag-edit:               Insert.
+* sgml-beginning-of-element:            Move.
+* sgml-change-element-name:             Change and delete.
+* sgml-clear-faces:                     Highlight.
+* sgml-complete:                        Complete.
+* sgml-custom-dtd:                      Managing the DTD.
+* sgml-custom-markup:                   Insert.
+* sgml-declaration:                     Validate.
+* sgml-default-dtd-file:                Managing the DTD.
+* sgml-default-dtd-file:                Managing the DTD.
+* sgml-down-element:                    Move.
+* sgml-edit-attrib-clear:               Attributes.
+* sgml-edit-attrib-default:             Attributes.
+* sgml-edit-attrib-field-end:           Attributes.
+* sgml-edit-attrib-field-end:           Attributes.
+* sgml-edit-attributes:                 Attributes.
+* sgml-end-of-element:                  Move.
+* sgml-expand-element:                  Fold.
+* sgml-fill-element:                    Change and delete.
+* sgml-fold-element:                    Fold.
+* sgml-fold-region:                     Fold.
+* sgml-fold-subelement:                 Fold.
+* sgml-forward-element:                 Move.
+* sgml-indent-data:                     Indent.
+* sgml-indent-or-tag:                   Indent.
+* sgml-indent-step:                     Indent.
+* sgml-insert-attribute:                Insert.
+* sgml-insert-element:                  Insert.
+* sgml-insert-end-tag:                  Insert.
+* sgml-insert-tag:                      Insert.
+* sgml-kill-element:                    Change and delete.
+* sgml-kill-markup:                     Change and delete.
+* sgml-list-valid-tags:                 Information.
+* sgml-live-element-indicator:          Information.
+* sgml-live-element-indicator:          Highlight.
+* sgml-load-dtd:                        Managing the DTD.
+* sgml-make-character-reference:        Change and delete.
+* sgml-markup-faces:                    Highlight.
+* sgml-minimize-attributes:             SGML declaration.
+* sgml-mode:                            Invoke.
+* sgml-next-data-field:                 Move.
+* sgml-next-trouble-spot:               Validate.
+* sgml-normalize:                       Change and delete.
+* sgml-normalize-trims:                 Change and delete.
+* sgml-offer-save:                      Validate.
+* sgml-omittag:                         SGML declaration.
+* sgml-omittag-transparent:             Insert.
+* sgml-parent-document:                 Managing the DTD.
+* sgml-parent-document:                 Managing the DTD.
+* sgml-parse-prolog:                    Managing the DTD.
+* sgml-save-dtd:                        Managing the DTD.
+* sgml-set-face:                        Highlight.
+* sgml-shorttag:                        SGML declaration.
+* sgml-show-context:                    Information.
+* sgml-split-element:                   Insert.
+* sgml-system-path:                     Managing the DTD.
+* sgml-tag-region:                      Insert.
+* sgml-tag-region-if-active:            Insert.
+* sgml-unfold-all:                      Fold.
+* sgml-unfold-element:                  Fold.
+* sgml-unfold-line:                     Fold.
+* sgml-untag-element:                   Change and delete.
+* sgml-up-element:                      Move.
+* sgml-validate:                        Validate.
+* sgml-validate-command:                Validate.
+* sgml-what-element:                    Information.
+* SHORTREF:                             Limitations.
+* SHORTTAG:                             SGML declaration.
+* start up:                             Invoke.
+* system identifier:                    Install.
+
+
+
+Tag Table:
+Node: Top854
+Node: Limitations2556
+Node: Install2979
+Node: Invoke5433
+Node: Validate6332
+Node: SGML declaration7710
+Node: Managing the DTD9222
+Node: Edit12860
+Node: Insert13389
+Node: Complete20330
+Node: Information20831
+Node: Indent21998
+Node: Move22655
+Node: Attributes23704
+Node: Change and delete25489
+Node: Display27859
+Node: Fold28108
+Node: Highlight29436
+Node: Bugs31056
+Node: Index31840
+
+End Tag Table
