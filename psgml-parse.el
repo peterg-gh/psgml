@@ -1,5 +1,5 @@
 ;;;; psgml-parse.el --- Parser for SGML-editing mode with parsing support
-;; $Id: psgml-parse.el,v 2.85 2002/04/25 20:50:26 lenst Exp $
+;; $Id: psgml-parse.el,v 2.88 2002/12/13 18:31:57 lenst Exp $
 
 ;; Copyright (C) 1994, 1995, 1996, 1997, 1998 Lennart Staflin
 
@@ -2969,7 +2969,8 @@ entity hierarchy as possible."
 	(setq epos (sgml-eref-start (sgml-epos-eref epos)))))
     epos))
 
-(defun sgml-open-element (eltype conref before-tag after-tag &optional asl)
+(defun sgml-open-element (eltype conref before-tag after-tag
+                                 &optional asl net-enabled)
   (unless (sgml-eltype-defined eltype)
     (setf (sgml-eltype-mixed eltype) t)
     (setf (sgml-eltype-etag-optional eltype) t)
@@ -2996,7 +2997,8 @@ entity hierarchy as possible."
 	      (append (sgml-eltype-includes eltype)
 		      (sgml-tree-includes sgml-current-tree))
 	      sgml-current-state
-	      (if (sgml-tree-net-enabled sgml-current-tree) 1)
+              (or net-enabled
+                  (if (sgml-tree-net-enabled sgml-current-tree) 1))
 	      conref
 	      newmap
 	      sgml-current-shortmap
@@ -3897,7 +3899,7 @@ VALUE is a string.  Returns nil or an attdecl."
 	(sgml-warn-about-undefined-entities
 	 (if sgml-xml-p
 	     nil
-	   sgml-warn-about-undefined-entities)))
+             sgml-warn-about-undefined-entities)))
     (sgml-with-parser-syntax-ro
      (while (progn (setq sgml-markup-start (point))
 		   (or (sgml-parse-s)
@@ -3912,12 +3914,16 @@ VALUE is a string.  Returns nil or an attdecl."
 	   (sgml-setup-doctype docname '(nil)))))))
   ;; Unless we have a DTD, the element types vector will only contain
   ;; one element type after removing zeroes..
+  ;; FIXME: this is too ugly.
+  ;; Would it not be better to count the element types than to rely on
+  ;; some properties of OBLISTs.
   (set (make-local-variable 'sgml-dtd-less)
-       (= 1 (length (delq 0 (append (sgml-dtd-eltypes sgml-dtd-info)
-				    '())))))
+       (or (null sgml-dtd-info)
+           (= 1 (length (delq 0 (append (sgml-dtd-eltypes sgml-dtd-info)
+                                        '()))))))
   (when (and sgml-xml-p sgml-dtd-less)
-      (set (make-local-variable 'sgml-warn-about-undefined-elements) nil)
-      (set (make-local-variable 'sgml-warn-about-undefined-entities) nil))
+    (set (make-local-variable 'sgml-warn-about-undefined-elements) nil)
+    (set (make-local-variable 'sgml-warn-about-undefined-entities) nil))
   (unless sgml-dtd-info
     (error "No document type defined by prolog"))
   (sgml-message "Parsing prolog...done"))
@@ -4123,9 +4129,8 @@ pointing to start of short ref and point pointing to the end."
 	   (sgml-do-move (sgml-eltype-token et)
 			 (format "%s start-tag" (sgml-eltype-name et)))
 	   (sgml-open-element et sgml-conref-flag
-			      sgml-markup-start (point) asl)
-	   (when net-enabled            ;FIXME: why not argument to sgml-open-el?
-	     (setf (sgml-tree-net-enabled sgml-current-tree) t))))))
+			      sgml-markup-start (point) asl net-enabled)))))
+
 
 (defun sgml-do-empty-start-tag ()
   "Return eltype to use if empty start tag."

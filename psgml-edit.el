@@ -1,6 +1,6 @@
 ;;; psgml-edit.el --- Editing commands for SGML-mode with parsing support
 ;;
-;; $Id: psgml-edit.el,v 2.66 2002/04/25 20:50:27 lenst Exp $
+;; $Id: psgml-edit.el,v 2.69 2002/08/13 15:13:23 lenst Exp $
 
 ;; Copyright (C) 1994, 1995, 1996 Lennart Staflin
 
@@ -172,7 +172,11 @@ possible."
     (error "Illegal name"))
   (let* ((element (sgml-find-element-of (point)))
 	 (attspec (sgml-element-attribute-specification-list element))
-	 (oldattlist (sgml-element-attlist element)))
+	 (oldattlist (sgml-element-attlist element))
+         (tagc (if (and sgml-xml-p (sgml-element-empty element))
+                (sgml-delim "XML-TAGCE")
+              (sgml-delim "TAGC")))
+         (tagc-len (length tagc)))
     (goto-char (sgml-element-end element))
     (unless  (sgml-element-empty element)
       (delete-char (- (sgml-element-etag-len element))))
@@ -180,15 +184,15 @@ possible."
     (goto-char (sgml-element-start element))
     (delete-char (sgml-element-stag-len element))
     (insert (sgml-delim "STAGO")
-            (sgml-general-insert-case gi))
+            (sgml-general-insert-case gi)
+            tagc)
     (let* ((newel (sgml-find-context-of (point)))
 	   (newattlist (sgml-element-attlist newel))
 	   (newasl (sgml-translate-attribute-specification-list
 		    attspec oldattlist newattlist)))
-      (sgml-insert-attributes newasl newattlist))
-    (insert (if (and sgml-xml-p (sgml-element-empty element))
-                (sgml-delim "XML-TAGCE")
-              (sgml-delim "TAGC")))))
+      (backward-char tagc-len)
+      (sgml-insert-attributes newasl newattlist)
+      (forward-char tagc-len))))
 
 
 (defun sgml-translate-attribute-specification-list (values from to)
@@ -1315,7 +1319,6 @@ Editing is done in a separate window."
 	   (xml-p sgml-xml-p))
       (switch-to-buffer-other-window
        (sgml-attribute-buffer element asl))
-      (sgml-edit-attrib-mode)
       (make-local-variable 'sgml-start-attributes)
       (setq sgml-start-attributes start)
       (make-local-variable 'sgml-always-quote-attributes)
@@ -1358,12 +1361,15 @@ Editing is done in a separate window."
       (setq buf (get-buffer-create bname))
       (set-buffer buf)
       (erase-buffer)
+      (sgml-edit-attrib-mode)
       (make-local-variable 'sgml-attlist)
       (setq sgml-attlist (sgml-effective-attlist
                           (sgml-element-eltype element)))
       (sgml-insert '(read-only t)
-		   "<%s  -- Edit values and finish with C-c C-c --\n"
-		   (sgml-element-name element))
+                   (substitute-command-keys
+                    "<%s  -- Edit values and finish with \
+\\[sgml-edit-attrib-finish], abort with \\[sgml-edit-attrib-abort] --\n")
+                   (sgml-element-name element))
       (loop
        for attr in sgml-attlist do
        ;; Produce text like
@@ -1374,10 +1380,10 @@ Editing is done in a separate window."
 	      (def-value (sgml-attdecl-default-value attr))
 	      (cur-value (sgml-lookup-attspec aname asl)))
 	 (sgml-insert			; atribute name
-	  '(read-only t sgml-category sgml-form) " %s =" aname)
+	  '(read-only t category sgml-form) " %s =" aname)
 	 (cond				; attribute value
 	  ((sgml-default-value-type-p 'FIXED def-value)
-	   (sgml-insert '(read-only t sgml-category sgml-fixed)
+	   (sgml-insert '(read-only t category sgml-fixed)
 			" #FIXED %s"
 			(sgml-default-value-attval def-value)))
 	  ((and (null cur-value)
@@ -1389,8 +1395,8 @@ Editing is done in a separate window."
 	   (sgml-insert '(category sgml-default rear-nonsticky (category))
 			"#DEFAULT"))
 	  (t
-           (sgml-insert '(read-only t sgml-category sgml-form
-                                    rear-nonsticky (read-only sgml-category))
+           (sgml-insert '(read-only t category sgml-form
+                                    rear-nonsticky (read-only category))
                         " ")
            (when (not (null cur-value))
              (sgml-insert nil "%s" (sgml-attspec-attval cur-value)))))
@@ -1427,7 +1433,7 @@ Editing is done in a separate window."
 
 (define-key sgml-edit-attrib-mode-map "\C-c\C-c" 'sgml-edit-attrib-finish)
 (define-key sgml-edit-attrib-mode-map "\C-c\C-d" 'sgml-edit-attrib-default)
-(define-key sgml-edit-attrib-mode-map "\C-c\C-k" 'sgml-edit-attrib-clear)
+(define-key sgml-edit-attrib-mode-map "\C-c\C-k" 'sgml-edit-attrib-abort)
 
 (define-key sgml-edit-attrib-mode-map "\C-a"  'sgml-edit-attrib-field-start)
 (define-key sgml-edit-attrib-mode-map "\C-e"  'sgml-edit-attrib-field-end)
@@ -1446,6 +1452,16 @@ value.  To abort edit kill buffer (\\[kill-buffer]) and remove window
   (use-local-map sgml-edit-attrib-mode-map)
   (run-hooks 'text-mode-hook 'sgml-edit-attrib-mode-hook))
 
+(defun sgml-edit-attrib-abort ()
+  "Abort the attribute editor, removing the window."
+  (interactive)
+  (let ((cb (current-buffer))
+	(start sgml-start-attributes))
+    (delete-windows-on cb)
+    (kill-buffer cb)
+    (when (markerp start)
+      (switch-to-buffer (marker-buffer start))
+      (goto-char start))))
 
 (defun sgml-edit-attrib-finish ()
   "Finish editing and insert attribute values in original buffer."
@@ -1475,7 +1491,7 @@ value.  To abort edit kill buffer (\\[kill-buffer]) and remove window
        (sgml-parse-s)
        (sgml-check-nametoken)		; attribute name, should match head of al
        (forward-char 3)
-       (unless (memq (get-text-property (point) 'sgml-category)
+       (unless (memq (get-text-property (point) 'category)
 		     '(sgml-default sgml-fixed))
 	 (push
 	  (sgml-make-attspec (sgml-attdecl-name (car al))
@@ -1530,7 +1546,7 @@ value.  To abort edit kill buffer (\\[kill-buffer]) and remove window
       (put-text-property (point) end 'read-only nil)
       (let ((inhibit-read-only t))
         (put-text-property (1- (point)) (point)
-                           'rear-nonsticky '(read-only sgml-category)))
+                           'rear-nonsticky '(read-only category)))
       (kill-region (point) end))))
 
 
@@ -1548,8 +1564,8 @@ value.  To abort edit kill buffer (\\[kill-buffer]) and remove window
     (beginning-of-line 1)
     (while (not (eq t (get-text-property (point) 'read-only)))
       (beginning-of-line 0))
-    (while (eq 'sgml-form (get-text-property (point) 'sgml-category))
-      (setq start (next-single-property-change (point) 'sgml-category))
+    (while (eq 'sgml-form (get-text-property (point) 'category))
+      (setq start (next-single-property-change (point) 'category))
       (unless start (error "No attribute value here"))
       (assert (number-or-marker-p start))
       (goto-char start))))

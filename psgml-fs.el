@@ -2,7 +2,7 @@
 ;; Copyright (C) 1995, 2000 Lennart Staflin
 
 ;; Author: Lennart Staflin <lenst@lysator.liu.se>
-;; Version: $Id: psgml-fs.el,v 1.12 2002/04/25 20:50:27 lenst Exp $
+;; Version: $Id: psgml-fs.el,v 1.13 2002/07/14 10:03:26 lenst Exp $
 ;; Keywords:
 
 ;;; This program is free software; you can redistribute it and/or modify
@@ -262,32 +262,47 @@ The value can be the style-sheet list, or it can be a file name
       (fs-addvspace (or (plist-get style 'bottom)
 			(fs-char 'default-bottom))))))
 
-;;;###autoload
-(defun style-format ()
-  (interactive)
+
+(defun fs-clear ()
   (setq fs-para-acc ""
         fs-hang-from nil
         fs-first-indent nil
         fs-left-indent nil
-        fs-vspace 0)
+        fs-vspace 0)  )
+
+
+(defun fs-setup-buffer ()
+  (save-excursion
+    (let ((orig-filename (buffer-file-name (current-buffer))))
+      (set-buffer fs-buffer)
+      (erase-buffer)
+      (setq ps-left-header
+            '(fs-title fs-filename))
+      (make-local-variable 'fs-filename)
+      (setq fs-filename (file-name-nondirectory orig-filename))
+      (make-local-variable 'fs-title)
+      (setq fs-title ""))))
+
+(defun fs-wrapper (buffer-name thunk)
+  (fs-clear)
   (let ((fs-style (fs-get-style fs-style))
-        (fs-buffer (get-buffer-create "*Formatted*")))
-    (save-excursion
-      (let ((orig-filename (buffer-file-name (current-buffer))))
-        (set-buffer fs-buffer)
-        (erase-buffer)
-        (setq ps-left-header
-              '(fs-title fs-filename))
-        (make-local-variable 'fs-filename)
-        (setq fs-filename (file-name-nondirectory orig-filename))
-        (make-local-variable 'fs-title)
-        (setq fs-title "")))
-    (display-buffer fs-buffer)
-    (fs-engine (sgml-top-element))
+        (fs-buffer (get-buffer-create buffer-name)))
+    (fs-setup-buffer)
+    (funcall thunk)
     (fs-para)
     (save-excursion
       (set-buffer fs-buffer)
-      (goto-char (point-min)))))
+      (goto-char (point-min)))
+    fs-buffer))
+
+
+;;;###autoload
+(defun style-format ()
+  (interactive)
+  (fs-wrapper  "*Formatted*"
+               (lambda ()
+                 (display-buffer fs-buffer)
+                 (fs-engine (sgml-top-element)))))
 
 
 ;;;; Helper functions for use in style sheet

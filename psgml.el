@@ -1,5 +1,5 @@
 ;;; psgml.el --- SGML-editing mode with parsing support
-;; $Id: psgml.el,v 2.65 2002/05/08 06:56:11 lenst Exp $
+;; $Id: psgml.el,v 2.66 2002/08/13 10:51:25 lenst Exp $
 
 ;; Copyright (C) 1993-2002 Lennart Staflin
 ;; Copyright (C) 1992 Free Software Foundation, Inc.
@@ -52,7 +52,7 @@
 
 ;;; Code:
 
-(defconst psgml-version "1.3.0"
+(defconst psgml-version "1.3.1"
   "Version of psgml package.")
 
 (defconst psgml-maintainer-address "lenst@lysator.liu.se")
