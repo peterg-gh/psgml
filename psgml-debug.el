@@ -1,6 +1,6 @@
 ;;;;\filename psgml-debug.el
 ;;;\Last edited: 2001-03-10 00:32:00 lenst
-;;;\RCS $Id: psgml-debug.el,v 2.25 2001/11/04 23:49:01 lenst Exp $
+;;;\RCS $Id: psgml-debug.el,v 2.26 2001/12/14 10:26:57 lenst Exp $
 ;;;\author {Lennart Staflin}
 ;;;\maketitle
 
@@ -457,6 +457,7 @@
 ;; Candidate for C-c C-t
 
 (autoload 'sgml-princ-names "psgml-info")
+(autoload 'sgml-eltype-refrenced-elements "psgml-info")
 
 (define-key sgml-mode-map "\C-c\C-t" 'sgml-show-current-element-type)
 

@@ -1,6 +1,6 @@
 ;;;; psgml-info.el
 ;;; Last edited: 2000-11-09 19:23:50 lenst
-;;; $Id: psgml-info.el,v 2.13 2001/04/02 22:04:46 lenst Exp $
+;;; $Id: psgml-info.el,v 2.14 2001/12/16 10:38:11 lenst Exp $
 
 ;; Copyright (C) 1994, 1995 Lennart Staflin
 
@@ -102,10 +102,11 @@
 	   (loop for dfa in (sgml-and-node-dfas (car agenda)) do
 		 (sgml-add-last-unique dfa states))))
 	 (setq agenda (cdr agenda)))
-       (setq res (sort (copy-seq (set-difference
-                                  (union res (sgml-eltype-includes eltype))
-                                  (sgml-eltype-excludes eltype)))
-		       (function string-lessp)))
+       (setq res
+             (sort (copy-sequence (set-difference
+                                   (union res (sgml-eltype-includes eltype))
+                                   (sgml-eltype-excludes eltype)))
+                   (function string-lessp)))
        (setf (sgml-eltype-appdata eltype 're-cache) res)
        res)))))
 

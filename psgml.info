@@ -712,6 +712,16 @@ associated DTD.
      choose from, a comment can be inserted with the available choices
      if the option `sgml-insert-missing-element-comment' is non-nil.
 
+`C-c C-i'
+     Inserts a new element in the current element where it is legal.
+     Prompts for element name with completion. The completion list
+     contains all elements that could be added to the current element
+     somewhere, without making the content invalid. This assumes that
+     the content is valid to begin with. Currently this list only has
+     regular elements, not inclusions. The new element will be inserted
+     as late as possible in the current element (unless prefix argument
+     is given, then as early as possible.)
+
 `C-c C-r'
      Makes the region into a new element (`sgml-tag-region').  Reads
      element name from mini-buffer with completion as for `C-c C-e'.
@@ -773,6 +783,13 @@ associated DTD.
 
 `Insert entity'
      Menu of all general entities defined in the DTD.
+
+`Add Element to Element'
+     Pops up a menu of all elements valid somewhere in the current
+     element.  The menu contains all elements that could be added to
+     the current element somewhere, without making the content invalid.
+     The new element will be inserted as late as possible in the
+     current element.
 
 `Insert attribute'
      Pops up a menu with all the attributes of an element.  The element
@@ -1285,8 +1302,8 @@ Index
 * Menu:
 
 * <LFD>:                                 Indent.
-* <TAB> <1>:                             Indent.
-* <TAB>:                                 Attributes.
+* <TAB> <1>:                             Attributes.
+* <TAB>:                                 Indent.
 * C-a:                                   Attributes.
 * C-c #:                                 Change and delete.
 * C-c +:                                 Insert.
@@ -1295,8 +1312,8 @@ Index
 * C-c <:                                 Insert.
 * C-c =:                                 Change and delete.
 * C-c C-a:                               Attributes.
-* C-c C-c <1>:                           Information.
-* C-c C-c:                               Attributes.
+* C-c C-c <1>:                           Attributes.
+* C-c C-c:                               Information.
 * C-c C-d <1>:                           Attributes.
 * C-c C-d:                               Move.
 * C-c C-e:                               Insert.
@@ -1304,6 +1321,7 @@ Index
 * C-c C-f C-r:                           Fold.
 * C-c C-f C-s:                           Fold.
 * C-c C-f C-x:                           Fold.
+* C-c C-i:                               Insert.
 * C-c C-k <1>:                           Change and delete.
 * C-c C-k:                               Attributes.
 * C-c C-n:                               Move.
@@ -1331,8 +1349,8 @@ Index
 * CONCUR:                                Introduction.
 * DATATAG:                               Introduction.
 * DOCTYPE:                               Managing the DTD.
-* DTD <1>:                               Managing the DTD.
-* DTD:                                   Information from the DTD.
+* DTD <1>:                               Information from the DTD.
+* DTD:                                   Managing the DTD.
 * Element:                               Information from the DTD.
 * entity:                                Information from the DTD.
 * entity catalog:                        Entity manager.
@@ -1347,6 +1365,7 @@ Index
 * RANK:                                  Introduction.
 * S-<mouse-1>:                           Insert.
 * SGML Declaration:                      Introduction.
+* sgml-add-element-to-element:           Insert.
 * sgml-always-quote-attributes:          SGML declaration.
 * sgml-auto-activate-dtd:                Managing the DTD.
 * sgml-auto-insert-required-elements:    Insert.
@@ -1461,19 +1480,19 @@ Node: Inserting a DOCTYPE22838
 Node: Information from the DTD24615
 Node: Edit25681
 Node: Insert26250
-Node: Complete34259
-Node: Information34760
-Node: Indent35927
-Node: Move36589
-Node: Attributes37637
-Node: Change and delete39426
-Node: Translating characters and entities42350
-Node: Display43013
-Node: Fold43297
-Node: Hiding markup44629
-Node: Highlight44772
-Node: Miscellaneous options46146
-Node: Bugs46856
-Node: Index47655
+Node: Complete35124
+Node: Information35625
+Node: Indent36792
+Node: Move37454
+Node: Attributes38502
+Node: Change and delete40291
+Node: Translating characters and entities43215
+Node: Display43878
+Node: Fold44162
+Node: Hiding markup45494
+Node: Highlight45637
+Node: Miscellaneous options47011
+Node: Bugs47721
+Node: Index48520
 
 End Tag Table

@@ -1,5 +1,5 @@
 ;;;; psgml-parse.el --- Parser for SGML-editing mode with parsing support
-;; $Id: psgml-parse.el,v 2.79 2001/11/04 23:49:02 lenst Exp $
+;; $Id: psgml-parse.el,v 2.83 2001/12/16 10:38:31 lenst Exp $
 
 ;; Copyright (C) 1994, 1995, 1996, 1997, 1998 Lennart Staflin
 
@@ -344,6 +344,16 @@ to point to the next scratch buffer.")
 	 (set-syntax-table normal-syntax-table)
          (set-buffer-modified-p buffer-modified)
          (sgml-debug "Restoring buffer mod: %s" buffer-modified)))))
+
+(defsubst sgml-set-buffer-multibyte (flag)
+  (cond ((featurep 'xemacs)
+         flag)
+        ((and (boundp 'emacs-major-version) (>= emacs-major-version 20))
+         (set-buffer-multibyte flag))
+	((boundp 'MULE)
+         (set 'mc-flag flag))
+        (t
+         flag)))
 
 
 ;;;; State machine
@@ -1243,6 +1253,8 @@ buffer is assumed to be empty to start with."
     (sgml-check-dtd-subset)
     (sgml-pop-entity)
     (erase-buffer)
+    ;; For Mule
+    (sgml-set-buffer-multibyte nil)
     (sgml-write-dtd sgml-dtd-info to-file)
     t))
 
@@ -1270,6 +1282,8 @@ buffer is assumed to be empty to start with."
   "Merge the binary coded dtd in the current buffer with the current dtd.
 The current dtd is the variable sgml-dtd-info.  Return t if the merge
 was successful or nil if failed."
+  ;; for mule
+  (sgml-set-buffer-multibyte nil)
   (goto-char (point-min))
   (sgml-read-sexp)			; skip filev
   (let ((dependencies (sgml-read-sexp))
@@ -1687,10 +1701,9 @@ in any of them."
   (let ((entity
 	 (sgml-lookup-entity name
 			     (sgml-dtd-entities sgml-dtd-info))))
-    (cond ((and (null entity)
-		sgml-warn-about-undefined-entities)
-	   (sgml-log-warning
-	    "Undefined entity %s" name))
+    (cond ((null entity)
+           (when sgml-warn-about-undefined-entities
+             (sgml-log-warning "Undefined entity %s" name)))
 	  ((sgml-entity-data-p entity)
 	   (when sgml-xml-p
 	     (sgml-error
@@ -2487,9 +2500,8 @@ overrides the entity type in entity look up."
 			      (sgml-epos (or ref-start (point)))
 			      (sgml-epos (point)))))
     (set-buffer sgml-scratch-buffer)
-    ;; For MULE to not misinterpret binary data set the mc-flag
-    ;; (reported by Jeffrey Friedl <jfriedl@nff.ncl.omron.co.jp>)
-    (set 'mc-flag nil)			
+    ;; for mule
+    (sgml-set-buffer-multibyte nil)
     (when (eq sgml-scratch-buffer (default-value 'sgml-scratch-buffer))
       (make-local-variable 'sgml-scratch-buffer)
       (setq sgml-scratch-buffer nil))
@@ -2799,7 +2811,7 @@ overrides the entity type in entity look up."
       (let ((deactivate-mark nil))
 	(sgml-need-dtd)
 	(let ((eol-pos (save-excursion (end-of-line 1) (point))))
-	  (let ((quiet (< (- (point) (sgml-max-pos-in-tree sgml-current-tree))
+	  (let ((quiet (< (- (point) (sgml-max-pos-in-tree sgml-top-tree))
                           500)))
 	    (when (if quiet
 		      t
@@ -3713,7 +3725,7 @@ Returns a list of attspec (attribute specification)."
 						  eltype))))
 	    (t
 	     (sgml-log-warning
-	      "%s is not in any name group for element %s."
+	      "%s is not in any name group for element %s"
 	      val
 	      (sgml-eltype-name eltype))))
       ;; FIXME: What happens when eltype is nil ??
@@ -4008,6 +4020,7 @@ pointing to start of short ref and point pointing to the end."
 				     (point))))
   (sgml-set-markup-type nil))
 
+(defvar sgml-parser-loop-hook nil)
 (defun sgml-parser-loop (extra-cond)
   (let (tem
 	(sgml-signal-data-function (function sgml-pcdata-move)))
@@ -4052,6 +4065,8 @@ pointing to start of short ref and point pointing to the end."
        ((sgml-parse-delim "MS-END")	; end of marked section
 	(sgml-set-markup-type 'ms-end))
        ((sgml-parse-processing-instruction))
+       ((and sgml-parser-loop-hook
+             (run-hook-with-args-until-success 'sgml-parser-loop-hook)))
        (t
 	(sgml-do-pcdata))))))
 

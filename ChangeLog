@@ -1,3 +1,26 @@
+2001-12-16  Lennart Staflin  <lennarts@manamind.no>
+
+	* Version 1.2.4 released
+
+2001-12-16  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-info.el (sgml-eltype-refrenced-elements): use built-in
+	function copy-sequence
+
+2001-12-14  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-parse.el (sgml-set-buffer-multibyte): Mule/multibyte patch
+	from Yasushi Abe.
+	(sgml-compile-dtd): dito.
+	(sgml-bdtd-merge): dito.
+	(sgml-push-to-entity): dito.
+	(sgml-do-entity-ref): fix sgml-warn-about-undefined-entities behviour.
+
+2001-12-06  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-parse.el (sgml-update-display): take max-pos of top-tree
+	not current-tree as that is not always defined at that point.
+
 2001-11-09  Lennart Staflin  <lenst@lysator.liu.se>
 
 	* Version 1.2.3 released
