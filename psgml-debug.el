@@ -1,6 +1,6 @@
 ;;;;\filename psgml-debug.el
 ;;;\Last edited: 2001-03-10 00:32:00 lenst
-;;;\RCS $Id: psgml-debug.el,v 2.26 2001/12/14 10:26:57 lenst Exp $
+;;;\RCS $Id: psgml-debug.el,v 2.27 2002/04/25 20:50:27 lenst Exp $
 ;;;\author {Lennart Staflin}
 ;;;\maketitle
 
@@ -11,6 +11,10 @@
 (require 'psgml-edit)
 (require 'psgml-dtd)
 (autoload 'sgml-translate-model "psgml-dtd" "" nil)
+(eval-when-compile
+  (require 'cl)
+  (require 'elp)
+  (require 'edebug))
 
 ;;;; Debugging
 
@@ -794,4 +798,4 @@ after the first tag inserted."
           (insert "</tr>")))))))
 
 
-;¤¤\end{codeseg}
+;\end{codeseg}

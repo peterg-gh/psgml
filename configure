@@ -523,7 +523,7 @@ fi
 
 
 PACKAGE=psgml
-VERSION=1.2.5
+VERSION=1.3.0
 cat >> confdefs.h <<EOF
 #define PACKAGE "$PACKAGE"
 EOF

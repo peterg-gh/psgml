@@ -1,5 +1,5 @@
 ;;; psgml-api.el --- Extra API functions for PSGML
-;; $Id: psgml-api.el,v 1.7 2002/04/06 05:33:42 lenst Exp $
+;; $Id: psgml-api.el,v 1.8 2002/04/25 20:50:27 lenst Exp $
 
 ;; Copyright (C) 1994 Lennart Staflin
 
@@ -30,7 +30,7 @@
 (provide 'psgml-api)
 (require 'psgml)
 (require 'psgml-parse)
-
+(eval-when-compile (require 'cl))
 
 ;;;; Mapping: map and modify
 

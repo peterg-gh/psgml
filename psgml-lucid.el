@@ -1,5 +1,5 @@
 ;;;; psgml-lucid.el --- Part of SGML-editing mode with parsing support
-;; $Id: psgml-lucid.el,v 2.6 2001/11/08 23:24:29 lenst Exp $
+;; $Id: psgml-lucid.el,v 2.7 2002/04/25 20:50:27 lenst Exp $
 
 ;; Copyright (C) 1994 Lennart Staflin
 

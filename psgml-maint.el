@@ -3,13 +3,12 @@
 ;; Copyright (C) 1996 Lennart Staflin
 
 ;; Author: Lennart Staflin <lenst@lysator.liu.se>
-;; Version: $Id: psgml-maint.el,v 1.5 2001/02/20 22:39:01 lenst Exp $
-;; Keywords: 
-;; Last edited: 1996-11-14 17:26:31 lenst
+;; Version: $Id: psgml-maint.el,v 1.7 2002/05/07 20:14:06 lenst Exp $
+;; Keywords:
 
 ;;; This program is free software; you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
-;;; the Free Software Foundation; either version 1, or (at your option)
+;;; the Free Software Foundation; either version 2, or (at your option)
 ;;; any later version.
 ;;;
 ;;; This program is distributed in the hope that it will be useful,
@@ -39,8 +38,8 @@
 (require 'bytecomp)
 
 (defconst psgml-common-files
-  '("psgml.el" "psgml-parse.el" "psgml-edit.el" "psgml-dtd.el" 
-    "psgml-info.el" "psgml-charent.el" "psgml-api.el"))
+  '("psgml.el" "psgml-parse.el" "psgml-edit.el" "psgml-dtd.el"
+    "psgml-info.el" "psgml-charent.el" "psgml-api.el" "psgml-sysdep.el"))
 
 (defconst psgml-emacs-files '("psgml-other.el"))
 (defconst psgml-xemacs-files '("psgml-lucid.el"))
@@ -57,8 +56,8 @@
 
 (defun psgml-find-source-dir (&optional ask)
   (if psgml-source-dir
-      t 
-    (let ((cand (list "." "./psgml-1.2.2")))
+      t
+    (let ((cand (list "." "./psgml-1.3.0")))
       (while cand
 	(if (file-exists-p (expand-file-name "psgml-maint.el" (car cand)))
 	    (progn
@@ -98,4 +97,3 @@
 
 
 ;;; psgml-maint.el ends here
-
