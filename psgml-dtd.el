@@ -1,5 +1,5 @@
 ;;;; psgml-dtd.el --- DTD parser for SGML-editing mode with parsing support
-;; $Id: psgml-dtd.el,v 2.15 1996/11/11 00:43:45 lenst Exp $
+;; $Id: psgml-dtd.el,v 2.16 1997/07/24 20:56:29 lenst Exp $
 
 ;; Copyright (C) 1994 Lennart Staflin
 
@@ -466,7 +466,8 @@ Case transformed for general names."
 	(setq el (if con1
 		     (funcall con1 subs)
 		   (car subs)))))
-     ((sgml-parse-rni "pcdata")		; #PCDATA
+     ((sgml-parse-rni (eval-when-compile
+			(sgml-general-case "PCDATA"))) ; #PCDATA
       (setq sgml-used-pcdata t)
       (setq el (sgml-make-pcdata)))
      ((sgml-parse-delim "DTGO")			; data tag group

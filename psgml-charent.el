@@ -1,6 +1,6 @@
 ;;;; psgml-charent.el
-;;; Last edited: Mon Nov 28 22:18:09 1994 by lenst@lysistrate (Lennart Staflin)
-;;; $Id: psgml-charent.el,v 1.2 1994/12/04 13:55:04 lenst Released $
+;;; Last edited: 1997-05-19 18:56:44 lenst
+;;; $Id: psgml-charent.el,v 1.3 1997/07/24 20:57:36 lenst Exp $
 
 ;; Copyright (C) 1994 Lennart Staflin
 
@@ -98,7 +98,7 @@ Alist with entity name as key and display character as content."
     (save-excursion
       (goto-char (point-min))
       (sgml-with-parser-syntax
-       (while (re-search-forward "&\\(\\w\\(\\w\\|\\s_\\)+\\);?" nil t)
+       (while (re-search-forward "&\\(\\w\\(\\w\\|\\s_\\)*\\);?" nil t)
 	 (setq charent (buffer-substring (match-beginning 1) (match-end 1)))
 	 (if (setq replacement (cdr (assoc charent charent-to-char)))
 	     (replace-match replacement t t)))))))

@@ -13,14 +13,14 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 PACKAGE = psgml
-VERSION = 1.0
+VERSION = 1.0.2
 
 SHELL = /bin/sh
                           # Right now we do not need it.
 
 srcdir = .
 
-prefix = /usr
+prefix = /usr/local
 datadir = ${prefix}/share
 locallisppath = $(prefix)/share/emacs/site-lisp
 psgmldir = $(locallisppath)/psgml
@@ -130,19 +130,5 @@ disttree:
 	# cp $(ELFILES) $(DISTDIR)
 	cp $(DISTFILES) $(DISTDIR)
 	cp Makefile.def $(DISTDIR)/Makefile
-
-# For understanding the following see the autoconf manual.
-configure: configure.in aclocal.m4
-	cd $(srcdir) && rm -f configure && autoconf
-
-Makefile: Makefile.in config.status
-	$(SHELL) ./config.status
-
-config.status: configure
-	$(SHELL) ./config.status --recheck
-
-# Tell versions [3.59,3.63) of GNU make not to export all variables.
-# Otherwise a system limit (for SysV at least) may be exceeded.
-.NOEXPORT:
 
 # Makefile.in ends here

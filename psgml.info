@@ -1,5 +1,5 @@
-This is Info file psgml.info, produced by Makeinfo-1.55 from the input
-file psgml.texi.
+This is Info file psgml.info, produced by Makeinfo version 1.66 from
+the input file psgml.texi.
 
 START-INFO-DIR-ENTRY
 * PSGML: (psgml).          PSGML, a major mode for SGML documents.
@@ -118,7 +118,7 @@ Installing PSGML
    To install PSGML you first need to uncompress and unpack the source
 archive.  This is done with the `gunzip' and `tar' commands.
 
-     gunzip psgml-1.0a12.tar.gz; tar xf psgml-1.0a12.tar
+     gunzip psgml-1.0.1.tar.gz; tar xf psgml-1.0.1.tar
 
    This should create a subdirectory to the current directory with the
 source code. This directory contains a `configure' command (see the
@@ -163,7 +163,7 @@ How to invoke PSGML
    PSGML defines a major mode called `sgml-mode'.  Files with
 extensions `.sgml', `.sgm' or `.dtd' will automatically be edited in
 SGML mode.  To edit some other file in sgml mode, type `M-x sgml-mode
-RET' after finding the file.
+<RET>' after finding the file.
 
    If you can modify the file you can add a "Local Variables" list
 (*note Local Variables in Files: (emacs)file variables.) to the end of
@@ -789,7 +789,7 @@ associated DTD.
 
    A menu is also available directly with a mouse button click in the
 buffer.  In GNU Emacs it is the first mouse button combined with shift
-(`S-mouse-1').  In Lucid Emacs it is bound to the third mouse button.
+(`S-<mouse-1>').  In Lucid Emacs it is bound to the third mouse button.
 The mouse button click will pop-up a menu of valid tags or a menu of
 attributes if the point is in a start-tag.  The attributes menu works
 as the "Insert attribute" menu from the menu-bar.  The tags list is the
@@ -912,15 +912,15 @@ Indentation according to structure
 ==================================
 
    You can indent a line according to the depth of element nesting at
-the beginning of the line.  To indent the current line use `TAB'.  You
-can also use `LFD' (`newline-and-indent') to start a new line with
-correct indentation.
+the beginning of the line.  To indent the current line use `<TAB>'.
+You can also use `<LFD>' (`newline-and-indent') to start a new line
+with correct indentation.
 
  - User Option: sgml-indent-step
      How much to increment indent for every element level.  If nil, no
      indentation.
 
-     If this is nil, `TAB' will insert a tab instead of indenting.
+     If this is nil, `<TAB>' will insert a tab instead of indenting.
 
  - User Option: sgml-indent-data
      If non-nil, indent in data/mixed context also.
@@ -985,7 +985,7 @@ attributes declaration as a comment.  Note also that the CURRENT VALUE
 is show without eventual quotes.
 
    It is now possible to edit the attribute values.  You can move to the
-next attribute with `TAB'.  If you want to let an attribute have its
+next attribute with `<TAB>'.  If you want to let an attribute have its
 default value use `C-c C-d', this will insert a `#DEFAULT' in the value
 field.
 
@@ -1283,205 +1283,196 @@ Index
 
 * Menu:
 
-* LFD:                                  Indent.
-* TAB:                                  Attributes.
-* TAB:                                  Indent.
-* C-a:                                  Attributes.
-* C-c #:                                Change and delete.
-* C-c +:                                Insert.
-* C-c -:                                Change and delete.
-* C-c /:                                Insert.
-* C-c <:                                Insert.
-* C-c =:                                Change and delete.
-* C-c C-a:                              Attributes.
-* C-c C-c:                              Attributes.
-* C-c C-c:                              Information.
-* C-c C-d:                              Attributes.
-* C-c C-d:                              Attributes.
-* C-c C-d:                              Move.
-* C-c C-e:                              Insert.
-* C-c C-f C-e:                          Fold.
-* C-c C-f C-r:                          Fold.
-* C-c C-f C-s:                          Fold.
-* C-c C-f C-x:                          Fold.
-* C-c C-k:                              Change and delete.
-* C-c C-k:                              Attributes.
-* C-c C-n:                              Move.
-* C-c C-o:                              Validate.
-* C-c C-q:                              Change and delete.
-* C-c C-r:                              Insert.
-* C-c C-s:                              Fold.
-* C-c C-t:                              Information.
-* C-c C-u C-a:                          Fold.
-* C-c C-u C-d:                          Inserting a DOCTYPE.
-* C-c C-u C-e:                          Fold.
-* C-c C-u C-l:                          Fold.
-* C-c C-u C-m:                          Insert.
-* C-c C-v:                              Validate.
-* C-c C-w:                              Information.
-* C-c RET:                              Insert.
-* C-e:                                  Attributes.
-* C-M-a:                                Move.
-* C-M-b:                                Move.
-* C-M-d:                                Move.
-* C-M-e:                                Move.
-* C-M-f:                                Move.
-* C-M-k:                                Change and delete.
-* C-M-u:                                Move.
-* CONCUR:                               Introduction.
-* DATATAG:                              Introduction.
-* DOCTYPE:                              Managing the DTD.
-* DTD:                                  Information from the DTD.
-* DTD:                                  Managing the DTD.
-* Element:                              Information from the DTD.
-* entity:                               Information from the DTD.
-* entity catalog:                       Entity manager.
-* external identifier:                  Entity manager.
-* invoke:                               Invoke.
-* LINK:                                 Introduction.
-* M-TAB:                                Complete.
-* major mode:                           Invoke.
-* newline-and-indent:                   Indent.
-* OMITTAG:                              SGML declaration.
-* public identifier:                    Entity manager.
-* RANK:                                 Introduction.
-* S-mouse-1:                            Insert.
-* SGML Declaration:                     Introduction.
-* sgml-always-quote-attributes:         SGML declaration.
-* sgml-auto-activate-dtd:               Managing the DTD.
-* sgml-auto-insert-required-elements:   Insert.
-* sgml-auto-insert-required-elements:   Insert.
-* sgml-backward-element:                Move.
-* sgml-backward-up-element:             Move.
-* sgml-balanced-tag-edit:               Insert.
-* sgml-beginning-of-element:            Move.
-* sgml-catalog-files:                   Entity manager.
-* sgml-change-element-name:             Change and delete.
-* sgml-charent-to-display-char:         Translating characters and entities.
-* sgml-clear-faces:                     Highlight.
-* sgml-complete:                        Complete.
-* sgml-custom-dtd:                      Inserting a DOCTYPE.
-* sgml-custom-dtd:                      Inserting a DOCTYPE.
-* sgml-custom-markup:                   Insert.
-* sgml-custom-markup:                   Insert.
-* sgml-declaration:                     Validate.
-* sgml-default-doctype-name:            Managing the DTD.
-* sgml-default-dtd-file:                Precompiled DTD Subsets.
-* sgml-default-dtd-file:                Precompiled DTD Subsets.
-* sgml-describe-element-type:           Information from the DTD.
-* sgml-describe-entity:                 Information from the DTD.
-* sgml-display-char-to-charent:         Translating characters and entities.
-* sgml-doctype:                         Using a Split Document.
-* sgml-down-element:                    Move.
-* sgml-ecat-files:                      Precompiled DTD Subsets.
-* sgml-edit-attrib-clear:               Attributes.
-* sgml-edit-attrib-default:             Attributes.
-* sgml-edit-attrib-field-end:           Attributes.
-* sgml-edit-attrib-field-start:         Attributes.
-* sgml-edit-attributes:                 Attributes.
-* sgml-end-of-element:                  Move.
-* sgml-expand-all-shortrefs:            Change and delete.
-* sgml-expand-element:                  Fold.
-* sgml-fill-element:                    Change and delete.
-* sgml-fold-element:                    Fold.
-* sgml-fold-region:                     Fold.
-* sgml-fold-subelement:                 Fold.
-* sgml-forward-element:                 Move.
-* sgml-general-dtd-info:                Information from the DTD.
-* sgml-ignore-undefined-elements:       Miscellaneous options.
-* sgml-indent-data:                     Indent.
-* sgml-indent-or-tab:                   Indent.
-* sgml-indent-step:                     Indent.
-* sgml-insert-attribute:                Insert.
-* sgml-insert-element:                  Insert.
-* sgml-insert-end-tag:                  Insert.
-* sgml-insert-end-tag-on-new-line:      Insert.
-* sgml-insert-end-tag-on-new-line:      Insert.
-* sgml-insert-missing-element-comment:  Insert.
-* sgml-insert-missing-element-comment:  Insert.
-* sgml-insert-tag:                      Insert.
-* sgml-kill-element:                    Change and delete.
-* sgml-kill-markup:                     Change and delete.
-* sgml-list-attributes:                 Information from the DTD.
-* sgml-list-content-elements:           Information from the DTD.
-* sgml-list-elements:                   Information from the DTD.
-* sgml-list-occur-in-elements:          Information from the DTD.
-* sgml-list-terminals:                  Information from the DTD.
-* sgml-list-valid-tags:                 Information.
-* sgml-live-element-indicator:          Information.
-* sgml-load-dtd:                        Precompiled DTD Subsets.
-* sgml-local-catalogs:                  Entity manager.
-* sgml-local-ecat-files:                Precompiled DTD Subsets.
-* sgml-make-character-reference:        Change and delete.
-* sgml-markup-faces:                    Highlight.
-* sgml-max-menu-size:                   Miscellaneous options.
-* sgml-minimize-attributes:             SGML declaration.
-* sgml-mode:                            Invoke.
-* sgml-next-data-field:                 Move.
-* sgml-next-trouble-spot:               Validate.
-* sgml-normalize:                       Change and delete.
-* sgml-normalize-trims:                 Change and delete.
-* sgml-offer-save:                      Validate.
-* sgml-omittag:                         SGML declaration.
-* sgml-omittag-transparent:             Insert.
-* sgml-omittag-transparent:             Insert.
-* sgml-parent-document:                 Using a Split Document.
-* sgml-parse-prolog:                    Managing the DTD.
-* sgml-public-map:                      Entity manager.
-* sgml-range-indicator-max-length:      Miscellaneous options.
-* sgml-recompile-out-of-date-cdtd:      Precompiled DTD Subsets.
-* sgml-save-dtd:                        Precompiled DTD Subsets.
-* sgml-set-face:                        Highlight.
-* sgml-shorttag:                        SGML declaration.
-* sgml-show-context:                    Information.
-* sgml-split-element:                   Insert.
+* <LFD>:                                 Indent.
+* <TAB> <1>:                             Attributes.
+* <TAB>:                                 Indent.
+* C-a:                                   Attributes.
+* C-c #:                                 Change and delete.
+* C-c +:                                 Insert.
+* C-c -:                                 Change and delete.
+* C-c /:                                 Insert.
+* C-c <:                                 Insert.
+* C-c =:                                 Change and delete.
+* C-c C-a:                               Attributes.
+* C-c C-c <1>:                           Attributes.
+* C-c C-c:                               Information.
+* C-c C-d <1>:                           Attributes.
+* C-c C-d:                               Move.
+* C-c C-e:                               Insert.
+* C-c C-f C-e:                           Fold.
+* C-c C-f C-r:                           Fold.
+* C-c C-f C-s:                           Fold.
+* C-c C-f C-x:                           Fold.
+* C-c C-k <1>:                           Change and delete.
+* C-c C-k:                               Attributes.
+* C-c C-n:                               Move.
+* C-c C-o:                               Validate.
+* C-c C-q:                               Change and delete.
+* C-c C-r:                               Insert.
+* C-c C-s:                               Fold.
+* C-c C-t:                               Information.
+* C-c C-u C-a:                           Fold.
+* C-c C-u C-d:                           Inserting a DOCTYPE.
+* C-c C-u C-e:                           Fold.
+* C-c C-u C-l:                           Fold.
+* C-c C-u C-m:                           Insert.
+* C-c C-v:                               Validate.
+* C-c C-w:                               Information.
+* C-c RET:                               Insert.
+* C-e:                                   Attributes.
+* C-M-a:                                 Move.
+* C-M-b:                                 Move.
+* C-M-d:                                 Move.
+* C-M-e:                                 Move.
+* C-M-f:                                 Move.
+* C-M-k:                                 Change and delete.
+* C-M-u:                                 Move.
+* CONCUR:                                Introduction.
+* DATATAG:                               Introduction.
+* DOCTYPE:                               Managing the DTD.
+* DTD <1>:                               Information from the DTD.
+* DTD:                                   Managing the DTD.
+* Element:                               Information from the DTD.
+* entity:                                Information from the DTD.
+* entity catalog:                        Entity manager.
+* external identifier:                   Entity manager.
+* invoke:                                Invoke.
+* LINK:                                  Introduction.
+* M-TAB:                                 Complete.
+* major mode:                            Invoke.
+* newline-and-indent:                    Indent.
+* OMITTAG:                               SGML declaration.
+* public identifier:                     Entity manager.
+* RANK:                                  Introduction.
+* S-<mouse-1>:                           Insert.
+* SGML Declaration:                      Introduction.
+* sgml-always-quote-attributes:          SGML declaration.
+* sgml-auto-activate-dtd:                Managing the DTD.
+* sgml-auto-insert-required-elements:    Insert.
+* sgml-backward-element:                 Move.
+* sgml-backward-up-element:              Move.
+* sgml-balanced-tag-edit:                Insert.
+* sgml-beginning-of-element:             Move.
+* sgml-catalog-files:                    Entity manager.
+* sgml-change-element-name:              Change and delete.
+* sgml-charent-to-display-char:          Translating characters and entities.
+* sgml-clear-faces:                      Highlight.
+* sgml-complete:                         Complete.
+* sgml-custom-dtd:                       Inserting a DOCTYPE.
+* sgml-custom-markup:                    Insert.
+* sgml-declaration:                      Validate.
+* sgml-default-doctype-name:             Managing the DTD.
+* sgml-default-dtd-file:                 Precompiled DTD Subsets.
+* sgml-describe-element-type:            Information from the DTD.
+* sgml-describe-entity:                  Information from the DTD.
+* sgml-display-char-to-charent:          Translating characters and entities.
+* sgml-doctype:                          Using a Split Document.
+* sgml-down-element:                     Move.
+* sgml-ecat-files:                       Precompiled DTD Subsets.
+* sgml-edit-attrib-clear:                Attributes.
+* sgml-edit-attrib-default:              Attributes.
+* sgml-edit-attrib-field-end:            Attributes.
+* sgml-edit-attrib-field-start:          Attributes.
+* sgml-edit-attributes:                  Attributes.
+* sgml-end-of-element:                   Move.
+* sgml-expand-all-shortrefs:             Change and delete.
+* sgml-expand-element:                   Fold.
+* sgml-fill-element:                     Change and delete.
+* sgml-fold-element:                     Fold.
+* sgml-fold-region:                      Fold.
+* sgml-fold-subelement:                  Fold.
+* sgml-forward-element:                  Move.
+* sgml-general-dtd-info:                 Information from the DTD.
+* sgml-ignore-undefined-elements:        Miscellaneous options.
+* sgml-indent-data:                      Indent.
+* sgml-indent-or-tab:                    Indent.
+* sgml-indent-step:                      Indent.
+* sgml-insert-attribute:                 Insert.
+* sgml-insert-element:                   Insert.
+* sgml-insert-end-tag:                   Insert.
+* sgml-insert-end-tag-on-new-line:       Insert.
+* sgml-insert-missing-element-comment:   Insert.
+* sgml-insert-tag:                       Insert.
+* sgml-kill-element:                     Change and delete.
+* sgml-kill-markup:                      Change and delete.
+* sgml-list-attributes:                  Information from the DTD.
+* sgml-list-content-elements:            Information from the DTD.
+* sgml-list-elements:                    Information from the DTD.
+* sgml-list-occur-in-elements:           Information from the DTD.
+* sgml-list-terminals:                   Information from the DTD.
+* sgml-list-valid-tags:                  Information.
+* sgml-live-element-indicator:           Information.
+* sgml-load-dtd:                         Precompiled DTD Subsets.
+* sgml-local-catalogs:                   Entity manager.
+* sgml-local-ecat-files:                 Precompiled DTD Subsets.
+* sgml-make-character-reference:         Change and delete.
+* sgml-markup-faces:                     Highlight.
+* sgml-max-menu-size:                    Miscellaneous options.
+* sgml-minimize-attributes:              SGML declaration.
+* sgml-mode:                             Invoke.
+* sgml-next-data-field:                  Move.
+* sgml-next-trouble-spot:                Validate.
+* sgml-normalize:                        Change and delete.
+* sgml-normalize-trims:                  Change and delete.
+* sgml-offer-save:                       Validate.
+* sgml-omittag:                          SGML declaration.
+* sgml-omittag-transparent:              Insert.
+* sgml-parent-document:                  Using a Split Document.
+* sgml-parse-prolog:                     Managing the DTD.
+* sgml-public-map:                       Entity manager.
+* sgml-range-indicator-max-length:       Miscellaneous options.
+* sgml-recompile-out-of-date-cdtd:       Precompiled DTD Subsets.
+* sgml-save-dtd:                         Precompiled DTD Subsets.
+* sgml-set-face:                         Highlight.
+* sgml-shorttag:                         SGML declaration.
+* sgml-show-context:                     Information.
+* sgml-split-element:                    Insert.
 * sgml-system-identifiers-are-preferred: Entity manager.
-* sgml-system-identifiers-are-preferred: Entity manager.
-* sgml-tag-region:                      Insert.
-* sgml-tag-region-if-active:            Insert.
-* sgml-unfold-all:                      Fold.
-* sgml-unfold-element:                  Fold.
-* sgml-unfold-line:                     Fold.
-* sgml-untag-element:                   Change and delete.
-* sgml-up-element:                      Move.
-* sgml-validate:                        Validate.
-* sgml-validate-command:                Validate.
-* sgml-validate-files:                  Validate.
-* sgml-what-element:                    Information.
-* SHORTTAG:                             SGML declaration.
-* start up:                             Invoke.
-* system identifier:                    Entity manager.
+* sgml-tag-region:                       Insert.
+* sgml-tag-region-if-active:             Insert.
+* sgml-unfold-all:                       Fold.
+* sgml-unfold-element:                   Fold.
+* sgml-unfold-line:                      Fold.
+* sgml-untag-element:                    Change and delete.
+* sgml-up-element:                       Move.
+* sgml-validate:                         Validate.
+* sgml-validate-command:                 Validate.
+* sgml-validate-files:                   Validate.
+* sgml-what-element:                     Information.
+* SHORTTAG:                              SGML declaration.
+* start up:                              Invoke.
+* system identifier:                     Entity manager.
 
 
 
 Tag Table:
-Node: Top968
-Node: Introduction1763
-Node: Install4360
-Node: Invoke6267
-Node: Entity manager7172
-Node: Validate12722
-Node: SGML declaration15248
-Node: Managing the DTD16741
-Node: Precompiled DTD Subsets18020
-Node: Using a Split Document21212
-Node: Inserting a DOCTYPE22768
-Node: Information from the DTD24545
-Node: Edit25611
-Node: Insert26180
-Node: Complete34187
-Node: Information34688
-Node: Indent35855
-Node: Move36512
-Node: Attributes37561
-Node: Change and delete39348
-Node: Translating characters and entities42272
-Node: Display42938
-Node: Fold43222
-Node: Hiding markup44554
-Node: Highlight44697
-Node: Miscellaneous options46071
-Node: Bugs46781
-Node: Index47580
+Node: Top976
+Node: Introduction1771
+Node: Install4368
+Node: Invoke6273
+Node: Entity manager7180
+Node: Validate12730
+Node: SGML declaration15256
+Node: Managing the DTD16749
+Node: Precompiled DTD Subsets18028
+Node: Using a Split Document21220
+Node: Inserting a DOCTYPE22776
+Node: Information from the DTD24553
+Node: Edit25619
+Node: Insert26188
+Node: Complete34197
+Node: Information34698
+Node: Indent35865
+Node: Move36527
+Node: Attributes37576
+Node: Change and delete39365
+Node: Translating characters and entities42289
+Node: Display42955
+Node: Fold43239
+Node: Hiding markup44571
+Node: Highlight44714
+Node: Miscellaneous options46088
+Node: Bugs46798
+Node: Index47597
 
 End Tag Table

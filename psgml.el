@@ -1,7 +1,7 @@
 ;;; psgml.el --- SGML-editing mode with parsing support
-;; $Id: psgml.el,v 2.20 1996/11/20 18:39:14 lenst Exp $
+;; $Id: psgml.el,v 2.23 1998/10/23 19:03:50 lenst Exp $
 
-;; Copyright (C) 1993, 1994, 1995, 1996 Lennart Staflin
+;; Copyright (C) 1993, 1994, 1995, 1996, 1997 Lennart Staflin
 ;; Copyright (C) 1992 Free Software Foundation, Inc.
 
 ;; Author: Lennart Staflin <lenst@lysator.liu.se>
@@ -52,7 +52,7 @@
 
 ;;; Code:
 
-(defconst psgml-version "1.0.1"
+(defconst psgml-version "1.0.3"
   "Version of psgml package.")
 
 (defconst psgml-maintainer-address "lenst@lysator.liu.se")
@@ -282,27 +282,32 @@ Setting this variable automatically makes it local to the current buffer.")
 (make-variable-buffer-local 'sgml-indent-data)
 
 (defvar sgml-system-path nil
-  "*List of directories used to look for system identifiers.")
+  "*Not used any more.
+Used to be list of directories used to look for system identifiers.
+Currently only used by `sgml-load-dtd'.")
 (put 'sgml-system-path 'sgml-type 'list)
 
 (defun sgml-parse-colon-path (cd-path)
   "Explode a colon-separated list of paths into a string list."
-  (let (cd-list (cd-start 0) cd-colon)
-    (setq cd-path (concat cd-path ":"))
-    (while (setq cd-colon (string-match ":" cd-path cd-start))
-      (setq cd-list
-	    (nconc cd-list
-		   (list (if (= cd-start cd-colon)
-			     nil
-			   (substitute-in-file-name
-			    (substring cd-path cd-start cd-colon))))))
-      (setq cd-start (+ cd-colon 1)))
-    cd-list))
+  (if (null cd-path)
+      nil
+    (let ((cd-sep ":")
+	  cd-list (cd-start 0) cd-colon)
+      (if (boundp 'path-separator)
+	  (setq cd-sep path-separator))
+      (setq cd-path (concat cd-path cd-sep))
+      (while (setq cd-colon (string-match cd-sep cd-path cd-start))
+	(setq cd-list
+	      (nconc cd-list
+		     (list (if (= cd-start cd-colon)
+			       nil
+			     (substitute-in-file-name
+			      (substring cd-path cd-start cd-colon))))))
+	(setq cd-start (+ cd-colon 1)))
+      cd-list)))
 
-(defvar sgml-public-map (sgml-parse-colon-path
-			 (or (getenv "SGML_PATH")
-			     "%S:/usr/local/lib/sgml/%o/%c/%d"))
-  
+(defvar sgml-public-map (or (sgml-parse-colon-path (getenv "SGML_PATH"))
+			    '("%S" "/usr/local/lib/sgml/%o/%c/%d"))
   "*Mapping from public identifiers to file names.
 This is a list of possible file names.  To find the file for a public
 identifier the elements of the list are used one at the time from the
@@ -325,9 +330,9 @@ This variable is automatically local to the buffer.")
 (make-variable-buffer-local 'sgml-local-catalogs)
 (put 'sgml-local-catalogs 'sgml-type 'list)
 
-(defvar sgml-catalog-files (sgml-parse-colon-path
-			    (or (getenv "SGML_CATALOG_FILES")
-				"CATALOG:/usr/local/lib/sgml/CATALOG"))
+(defvar sgml-catalog-files (or (sgml-parse-colon-path
+				(getenv "SGML_CATALOG_FILES"))
+			       '("CATALOG" "/usr/local/lib/sgml/CATALOG"))
   "*List of catalog entry files.
 The files are in the format defined in the SGML Open Draft Technical
 Resolution on Entity Management.")
@@ -502,7 +507,6 @@ See `compilation-error-regexp-alist'.")
     sgml-markup-faces
     sgml-system-identifiers-are-preferred
     sgml-trace-entity-lookup
-    sgml-system-path
     sgml-public-map
     sgml-catalog-files
     sgml-ecat-files
@@ -1009,7 +1013,6 @@ sgml-indent-step  How much to increament indent for every element level.
 sgml-indent-data  If non-nil, indent in data/mixed context also.
 sgml-set-face     If non-nil, psgml will set the face of parsed markup.
 sgml-markup-faces The faces used when the above variable is non-nil.
-sgml-system-path  List of directorys used to look for system identifiers.
 sgml-public-map  Mapping from public identifiers to file names.
 sgml-offer-save  If non-nil, ask about saving modified buffers before
 		\\[sgml-validate] is run.
@@ -1404,6 +1407,7 @@ If it is something else complete with ispell-complete-word." t)
 
 
 ;;;; Last provisions
+
 (provide 'psgml)
 (provide 'sgml-mode)
 
@@ -1414,4 +1418,3 @@ If it is something else complete with ispell-complete-word." t)
   (require 'psgml-other)))
 
 ;;; psgml.el ends here
-

@@ -1,7 +1,7 @@
 ;;;; psgml-parse.el --- Parser for SGML-editing mode with parsing support
-;; $Id: psgml-parse.el,v 2.44 1996/11/20 18:40:50 lenst Exp $
+;; $Id: psgml-parse.el,v 2.47 1998/10/20 20:32:29 lenst Exp $
 
-;; Copyright (C) 1994, 1995 Lennart Staflin
+;; Copyright (C) 1994, 1995, 1996, 1997 Lennart Staflin
 
 ;; Author: Lennart Staflin <lenst@lysator.liu.se>
 ;; Acknowledgment:
@@ -320,13 +320,13 @@ to point to the next scratch buffer.")
 ;; The and-model groups creates too big state machines, therefor
 ;; there is a datastruture called and-node.
 
-;; A and-node is a specification for a dfa that has not been computed.
-;; It contains a set of dfas that all have to be traversed befor going
+;; An and-node is a specification for a dfa that has not been computed.
+;; It contains a set of dfas that all have to be traversed before going
 ;; to the next state.  The and-nodes are only stored in moves and are
 ;; not seen by the parser.  When a move is taken the and-node is converted
-;; to a and-state.
+;; to an and-state.
 
-;; A and-state keeps track of which dfas still need to be
+;; An and-state keeps track of which dfas still need to be
 ;; traversed and the state of the current dfa.
 
 ;; move = <token, node>
@@ -531,7 +531,7 @@ If this is not possible, but all DFAS are final, move by TOKEN in NEXT."
 ;;;; Attribute Types
 
 ;;; Basic Types
-;; name = string	attribute names are lisp symbols
+;; name = string	attribute names are lisp strings
 ;; attval = string	attribute values are lisp strings
 
 ;;; Attribute Declaration Type 
@@ -1840,7 +1840,7 @@ FILE is the file containing the catalog.  Maintains a cache of parsed
 catalog files in variable CACHE-VAR. The parsing is done by function
 PARSER-FUN that should parse the current buffer and return the parsed
 repreaentation of the catalog."
-  (setq file (file-truename (expand-file-name file default-dir)))
+  (setq file (expand-file-name file default-dir))
   (and
    (file-readable-p file)
    (let ((c (assoc file (symbol-value cache-var)))
@@ -2383,7 +2383,7 @@ overrides the entity type in entity look up."
       (setq sgml-buffer-parse-state nil))
     (cond
      ((stringp entity)			; a file name
-      (save-excursion (insert-file-contents entity))
+      (insert-file-contents entity)
       (setq default-directory (file-name-directory entity)))
      ((consp (sgml-entity-text entity)) ; external id?
       (let* ((extid (sgml-entity-text entity))
@@ -3452,19 +3452,23 @@ Assumes starts with point inside a markup declaration."
       (sgml-do-usemap-element mapname)))))
 
 (defconst sgml-markup-declaration-table
-  '(("sgml"     . sgml-do-sgml-declaration)
-    ("doctype"  . sgml-do-doctype)
-    ("element"  . sgml-declare-element)
-    ("entity"   . sgml-declare-entity)
-    ("usemap"   . sgml-do-usemap)
-    ("shortref" . sgml-declare-shortref)
-    ("notation" . sgml-declare-notation)
-    ("attlist"  . sgml-declare-attlist)
-    ("uselink"  . sgml-skip-upto-mdc)
-    ("linktype" . sgml-skip-upto-mdc)
-    ("link"     . sgml-skip-upto-mdc)
-    ("idlink"   . sgml-skip-upto-mdc)
-    ))
+  (mapcar (lambda (pair)
+	    (cons (sgml-general-case (car pair))
+		  (cdr pair)))
+	
+	  '(("sgml"     . sgml-do-sgml-declaration)
+	    ("doctype"  . sgml-do-doctype)
+	    ("element"  . sgml-declare-element)
+	    ("entity"   . sgml-declare-entity)
+	    ("usemap"   . sgml-do-usemap)
+	    ("shortref" . sgml-declare-shortref)
+	    ("notation" . sgml-declare-notation)
+	    ("attlist"  . sgml-declare-attlist)
+	    ("uselink"  . sgml-skip-upto-mdc)
+	    ("linktype" . sgml-skip-upto-mdc)
+	    ("link"     . sgml-skip-upto-mdc)
+	    ("idlink"   . sgml-skip-upto-mdc))))
+
 
 (defun sgml-parse-markup-declaration (option)
   "Parse a markup declartion.
@@ -3516,12 +3520,14 @@ Returns a list of attspec (attribute specification)."
       (sgml-parse-s)
       (cond ((sgml-parse-delim "VI")
 	     (sgml-parse-s)
-	     (setq val (sgml-check-attribute-value-specification))
-	     (when eltype
-	       (or (setq attdecl (sgml-lookup-attdecl name attlist))
-		   (sgml-log-warning
-		    "Attribute %s not declared for element %s"
-		    name (sgml-eltype-name eltype)))))
+	     (setq val (sgml-parse-attribute-value-specification 'warn))
+	     (if (null val)
+		 (setq attdecl nil)
+	       (when eltype
+		 (or (setq attdecl (sgml-lookup-attdecl name attlist))
+		     (sgml-log-warning
+		      "Attribute %s not declared for element %s"
+		      name (sgml-eltype-name eltype))))))
 	    ((null eltype)
 	     (sgml-parse-error "Expecting a ="))
 	    ((progn
@@ -3550,6 +3556,16 @@ Returns a list of attspec (attribute specification)."
       (sgml-parse-nametoken t)		; Not really a nametoken, but an
 					; undelimited literal
       (sgml-parse-error "Expecting an attribute value: literal or token")))
+
+(defun sgml-parse-attribute-value-specification (&optional warn)
+  (or (sgml-parse-literal)
+      (sgml-parse-nametoken t)		; Not really a nametoken, but an
+					; undelimited literal
+      (if warn
+	  (progn
+	    (sgml-log-warning "Expecting an attribute value: literal or token")
+	    nil))))
+
 
 (defun sgml-find-attdecl-for-value (value eltype)
   "Find the attribute declaration of ELTYPE that has VALUE in its name group.
@@ -3647,7 +3663,7 @@ VALUE is a string.  Returns nil or an attdecl."
     (setq sgml-current-state
 	  (sgml-make-primitive-content-token et))
 
-    (when (consp (cadr modifier))	; There are "seen" elements
+    (when (consp (cdr modifier))	; There are "seen" elements
       (sgml-open-element et nil (point-min) (point-min))
       (loop for seenel in (cadr modifier)
 	    do (setq sgml-current-state
@@ -3659,7 +3675,8 @@ VALUE is a string.  Returns nil or an attdecl."
     (setf (sgml-tree-excludes top) (sgml-tree-excludes sgml-current-tree))
     (setf (sgml-tree-shortmap top) sgml-current-shortmap)
     (setf (sgml-eltype-model (sgml-tree-eltype top))
-	  sgml-current-state)))
+	  sgml-current-state)
+    (setf (sgml-tree-content top) nil)))
 
 
 (defun sgml-set-global ()
@@ -4002,8 +4019,8 @@ pointing to start of short ref and point pointing to the end."
 	   (sgml-log-warning
 	    "Unclosed tag is not allowed with SHORTTAG NO")
 	   t))
-   (sgml-error "Invalid character in markup %c"
-	       (following-char))))
+   (sgml-log-warning "Invalid character in markup %c"
+		     (following-char))))
 
 (defun sgml-implied-end-tag (type start end)
   (cond ((eq sgml-current-tree sgml-top-tree)
