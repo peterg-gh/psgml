@@ -1,6 +1,6 @@
 ;;; psgml-edit.el --- Editing commands for SGML-mode with parsing support
 ;;
-;; $Id: psgml-edit.el,v 2.63 2001/11/04 23:49:01 lenst Exp $
+;; $Id: psgml-edit.el,v 2.65 2002/02/15 15:31:47 lenst Exp $
 
 ;; Copyright (C) 1994, 1995, 1996 Lennart Staflin
 
@@ -632,11 +632,10 @@ Deprecated: ELEMENT"
 
 (defun sgml-insert-tag (tag &optional silent no-nl-after)
   "Insert a tag, reading tag name in minibuffer with completion.
-If the variable sgml-balanced-tag-edit is t, also inserts the
-corresponding end tag. If sgml-leave-point-after-insert is t, the point
-is left after the inserted tag(s), unless the element has some required
-content.  If sgml-leave-point-after-insert is nil the point is left
-after the first tag inserted."
+If sgml-leave-point-after-insert is t, the point is left after the
+inserted tag(s), unless the element has some required content. If
+sgml-leave-point-after-insert is nil the point is left after the first
+tag inserted."
   (interactive 
    (list
     (let ((completion-ignore-case sgml-namecase-general))
@@ -1348,9 +1347,10 @@ Editing is done in a separate window."
 	  ((and (null cur-value)
 		(or (memq def-value '(IMPLIED CONREF CURRENT))
 		    (sgml-default-value-attval def-value)))
-           (sgml-insert '(read-only t category sgml-form) " ")
-	   (sgml-insert '(category sgml-default rear-nonsticky (category)
-                                   read-only sgml-default)
+           (sgml-insert '(read-only t category sgml-form
+                                    rear-nonsticky (read-only category))
+                        " ")
+	   (sgml-insert '(category sgml-default rear-nonsticky (category))
 			"#DEFAULT"))
 	  (t
            (sgml-insert '(read-only t category sgml-form
@@ -1461,6 +1461,11 @@ value.  To abort edit kill buffer (\\[kill-buffer]) and remove window
       (narrow-to-region (point)
 			(progn (sgml-edit-attrib-field-end)
 			       (point)))
+      (goto-char (point-min))
+      (while (not (eobp))
+        (if (eq 'sgml-default (get-text-property (point) 'category))
+            (delete-char 1)
+          (forward-char 1)))
       (unless (eq type 'CDATA)
 	(subst-char-in-region (point-min) (point-max) ?\n ? )
 	(goto-char (point-min))
@@ -1477,11 +1482,8 @@ value.  To abort edit kill buffer (\\[kill-buffer]) and remove window
   (interactive)
   (sgml-edit-attrib-clear)
   (save-excursion
-    (sgml-insert '(category sgml-default read-only sgml-default)
-		 "#DEFAULT"))
-  (let ((inhibit-read-only t))
-    (put-text-property (1- (point)) (point)
-                       'rear-nonsticky '(category))))
+    (sgml-insert '(category sgml-default rear-nonsticky (category))
+                 "#DEFAULT")))
 
 (defun sgml-edit-attrib-clear ()
   "Kill the value of current attribute."
@@ -1530,6 +1532,8 @@ value.  To abort edit kill buffer (\\[kill-buffer]) and remove window
 (defun sgml-edit-attrib-next ()
   "Move to next attribute value."
   (interactive)
+  (if (eq t (get-text-property (point) 'read-only))
+      (beginning-of-line 1))
   (or (search-forward-regexp "^ *[_.:A-Za-z0-9---]+ *= ?" nil t)
       (goto-char (point-min))))
 

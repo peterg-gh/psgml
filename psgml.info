@@ -674,20 +674,16 @@ associated DTD.
      Will ask, for the tag to insert, in the mini-buffer with
      completion on the tags that are valid at point (`sgml-insert-tag').
 
-     If the option `sgml-balanced-tag-edit' is non-nil, inserting a
-     start-tag will also insert the corresponding end-tag.  If, in
-     addition, `sgml-auto-insert-required-elements' is non-nil, tags
-     for elements required between the inserted tags will also be
-     inserted.
+     If `sgml-auto-insert-required-elements' is non-nil, tags for
+     elements required between the inserted tags will also be inserted.
 
      The list of valid tags, computed for a position in the buffer, will
      contain:
 
        1. The end-tag for the current element, if it can be ended at
-          the position and `sgml-balanced-tag-edit' is nil.
-          Furthermore it will contain end-tags for enclosing elements
-          if the necessary omissible end-tag declarations have been
-          made in the DTD.
+          the position.  Furthermore it will contain end-tags for
+          enclosing elements if the necessary omissible end-tag
+          declarations have been made in the DTD.
 
        2. The start-tags of all elements that could occur after point.
           If `sgml-omittag-transparent' is nil, the above will be
@@ -831,8 +827,8 @@ indicate the region to mark:
      selection in Emacs.
 
  - User Option: sgml-balanced-tag-edit
-     If non-nil, inserting a start-tag will also insert the
-     corresponding end-tag.
+     If non-nil, inserting a start-tag using the context menu will also
+     insert the corresponding end-tag.
 
  - User Option: sgml-auto-insert-required-elements
      If non-nil, automatically inserts required elements in the content
@@ -1302,8 +1298,8 @@ Index
 * Menu:
 
 * <LFD>:                                 Indent.
-* <TAB> <1>:                             Attributes.
-* <TAB>:                                 Indent.
+* <TAB> <1>:                             Indent.
+* <TAB>:                                 Attributes.
 * C-a:                                   Attributes.
 * C-c #:                                 Change and delete.
 * C-c +:                                 Insert.
@@ -1312,18 +1308,19 @@ Index
 * C-c <:                                 Insert.
 * C-c =:                                 Change and delete.
 * C-c C-a:                               Attributes.
-* C-c C-c <1>:                           Attributes.
-* C-c C-c:                               Information.
+* C-c C-c <1>:                           Information.
+* C-c C-c:                               Attributes.
 * C-c C-d <1>:                           Attributes.
-* C-c C-d:                               Move.
+* C-c C-d <2>:                           Move.
+* C-c C-d:                               Attributes.
 * C-c C-e:                               Insert.
 * C-c C-f C-e:                           Fold.
 * C-c C-f C-r:                           Fold.
 * C-c C-f C-s:                           Fold.
 * C-c C-f C-x:                           Fold.
 * C-c C-i:                               Insert.
-* C-c C-k <1>:                           Change and delete.
-* C-c C-k:                               Attributes.
+* C-c C-k <1>:                           Attributes.
+* C-c C-k:                               Change and delete.
 * C-c C-n:                               Move.
 * C-c C-o:                               Validate.
 * C-c C-q:                               Change and delete.
@@ -1480,19 +1477,19 @@ Node: Inserting a DOCTYPE22838
 Node: Information from the DTD24615
 Node: Edit25681
 Node: Insert26250
-Node: Complete35124
-Node: Information35625
-Node: Indent36792
-Node: Move37454
-Node: Attributes38502
-Node: Change and delete40291
-Node: Translating characters and entities43215
-Node: Display43878
-Node: Fold44162
-Node: Hiding markup45494
-Node: Highlight45637
-Node: Miscellaneous options47011
-Node: Bugs47721
-Node: Index48520
+Node: Complete34955
+Node: Information35456
+Node: Indent36623
+Node: Move37285
+Node: Attributes38333
+Node: Change and delete40122
+Node: Translating characters and entities43046
+Node: Display43709
+Node: Fold43993
+Node: Hiding markup45325
+Node: Highlight45468
+Node: Miscellaneous options46842
+Node: Bugs47552
+Node: Index48351
 
 End Tag Table

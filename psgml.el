@@ -1,7 +1,7 @@
 ;;; psgml.el --- SGML-editing mode with parsing support
-;; $Id: psgml.el,v 2.59 2001/12/14 10:33:57 lenst Exp $
+;; $Id: psgml.el,v 2.62 2002/02/15 15:32:10 lenst Exp $
 
-;; Copyright (C) 1993-1999 Lennart Staflin
+;; Copyright (C) 1993-2002 Lennart Staflin
 ;; Copyright (C) 1992 Free Software Foundation, Inc.
 
 ;; Author: Lennart Staflin <lenst@lysator.liu.se>
@@ -52,7 +52,7 @@
 
 ;;; Code:
 
-(defconst psgml-version "1.2.4"
+(defconst psgml-version "1.2.5"
   "Version of psgml package.")
 
 (defconst psgml-maintainer-address "lenst@lysator.liu.se")
@@ -265,7 +265,7 @@ Setting this variable automatically makes it local to the current buffer.")
 of an inserted element.")
 
 (defvar sgml-balanced-tag-edit t
-  "*If non-nil, always insert start-end tag pairs.")
+  "*If non-nil, context menu inserts start-end tag pairs.")
 
 (defvar sgml-omittag-transparent (not sgml-balanced-tag-edit)
   "*If non-nil, will show legal tags inside elements with omitable start tags
@@ -479,6 +479,9 @@ string will be replaced according to the list below, if the string contains
 %d means the file containing the DOCTYPE declaration, if not in the buffer 
 ")
 (make-variable-buffer-local 'sgml-validate-command)
+
+(defvar sgml-xml-validate-command "nsgmls -wxml -s %s %s"
+  "*The default for `sgml-validate-command' in XML mode.")
 
 (defvar sgml-validate-files nil
   "If non-nil, a function of no arguments that returns a list of file names.
@@ -781,6 +784,12 @@ as that may change."
 (if sgml-mode-map
     ()
   (setq sgml-mode-map (make-sparse-keymap)))
+
+(defvar sgml-prefix-f-map (make-sparse-keymap))
+(defvar sgml-prefix-u-map (make-sparse-keymap))
+
+(define-key sgml-mode-map "\C-c\C-f" sgml-prefix-f-map)
+(define-key sgml-mode-map "\C-c\C-u" sgml-prefix-u-map) 
 
 ;;; Key commands
 
@@ -1120,7 +1129,6 @@ sgml-shorttag  Set this to reflect SHORTTAG in the SGML declaration.
 sgml-namecase-general  Set this to reflect NAMECASE GENERAL in the SGML declaration.
 sgml-auto-insert-required-elements  If non-nil, automatically insert required 
 	elements in the content of an inserted element.
-sgml-balanced-tag-edit  If non-nil, always insert start-end tag pairs.
 sgml-omittag-transparent  If non-nil, will show legal tags inside elements
 	with omitable start tags and legal tags beyond omitable end tags.
 sgml-leave-point-after-insert  If non-nil, the point will remain after 
@@ -1224,11 +1232,10 @@ All bindings:
   (setq sgml-namecase-general nil)
   (setq sgml-minimize-attributes nil)
   (setq sgml-always-quote-attributes t)
-  (setq sgml-validate-command "nsgmls -wxml -s %s %s")
-  ;; FIXME: why conditional?
-  (unless sgml-declaration
-    (make-local-variable 'sgml-declaration)
-    (setq sgml-declaration sgml-xml-declaration)))
+  (setq sgml-validate-command sgml-xml-validate-command)
+  (make-local-variable 'sgml-declaration)
+  (setq sgml-declaration sgml-xml-declaration))
+
 
 (defun sgml-default-dtd-file ()
   (and (buffer-file-name)
@@ -1483,11 +1490,10 @@ This uses the selective display feature." t)
 (autoload 'sgml-show-context "psgml-edit" "Display where the cursor is in the element hierarchy." t)
 (autoload 'sgml-what-element "psgml-edit" "Display what element is under the cursor." t)
 (autoload 'sgml-insert-tag "psgml-edit" "Insert a tag, reading tag name in minibuffer with completion.
-If the variable sgml-balanced-tag-edit is t, also inserts the
-corresponding end tag. If sgml-leave-point-after-insert is t, the point
-is left after the inserted tag(s), unless the element has some required
-content.  If sgml-leave-point-after-insert is nil the point is left
-after the first tag inserted." t)
+ If sgml-leave-point-after-insert is t, the point is left after the
+inserted tag(s), unless the element has some required content. If
+sgml-leave-point-after-insert is nil the point is left after the first
+tag inserted." t)
 (autoload 'sgml-insert-element "psgml-edit" "Reads element name from minibuffer and inserts start and end tags." t)
 (autoload 'sgml-tag-region "psgml-edit" "Reads element name from minibuffer and inserts start and end tags." t)
 (autoload 'sgml-insert-end-tag "psgml-edit" "Insert end-tag for the current open element." t)

@@ -1,5 +1,5 @@
 ;;;; psgml-parse.el --- Parser for SGML-editing mode with parsing support
-;; $Id: psgml-parse.el,v 2.83 2001/12/16 10:38:31 lenst Exp $
+;; $Id: psgml-parse.el,v 2.84 2002/02/08 14:10:43 lenst Exp $
 
 ;; Copyright (C) 1994, 1995, 1996, 1997, 1998 Lennart Staflin
 
@@ -345,11 +345,14 @@ to point to the next scratch buffer.")
          (set-buffer-modified-p buffer-modified)
          (sgml-debug "Restoring buffer mod: %s" buffer-modified)))))
 
-(defsubst sgml-set-buffer-multibyte (flag)
+(defun sgml-set-buffer-multibyte (flag)
   (cond ((featurep 'xemacs)
          flag)
         ((and (boundp 'emacs-major-version) (>= emacs-major-version 20))
-         (set-buffer-multibyte flag))
+         (set-buffer-multibyte
+          (if (eq flag 'default)
+              default-enable-multibyte-characters
+            flag)))
 	((boundp 'MULE)
          (set 'mc-flag flag))
         (t
@@ -1253,8 +1256,6 @@ buffer is assumed to be empty to start with."
     (sgml-check-dtd-subset)
     (sgml-pop-entity)
     (erase-buffer)
-    ;; For Mule
-    (sgml-set-buffer-multibyte nil)
     (sgml-write-dtd sgml-dtd-info to-file)
     t))
 
@@ -2500,13 +2501,12 @@ overrides the entity type in entity look up."
 			      (sgml-epos (or ref-start (point)))
 			      (sgml-epos (point)))))
     (set-buffer sgml-scratch-buffer)
-    ;; for mule
-    (sgml-set-buffer-multibyte nil)
     (when (eq sgml-scratch-buffer (default-value 'sgml-scratch-buffer))
       (make-local-variable 'sgml-scratch-buffer)
       (setq sgml-scratch-buffer nil))
     (setq sgml-last-entity-buffer (current-buffer))
     (erase-buffer)
+    (sgml-set-buffer-multibyte 'default)
     (setq default-directory dd)
     (make-local-variable 'sgml-current-file)
     (make-local-variable 'sgml-current-eref)
