@@ -3,9 +3,9 @@
 ;; Copyright (C) 1996 Lennart Staflin
 
 ;; Author: Lennart Staflin <lenst@lysator.liu.se>
-;; Version: $Id$
+;; Version: $Id: psgml-maint.el,v 1.2 1996/11/20 18:39:31 lenst Exp $
 ;; Keywords: 
-;; Last edited: Sun Sep  1 02:13:03 1996 by lenst@triton.lstaflin.pp.se (Lennart Staflin)
+;; Last edited: 1996-11-14 17:26:31 lenst
 
 ;;; This program is free software; you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -40,8 +40,7 @@
 
 (defconst psgml-common-files
   '("psgml.el" "psgml-parse.el" "psgml-edit.el" "psgml-dtd.el" 
-    "psgml-info.el" "psgml-charent.el" "psgml-api.el" 
-    "psgml-debug.el" "fs.el"))
+    "psgml-info.el" "psgml-charent.el" "psgml-api.el"))
 
 (defconst psgml-emacs-files '("psgml-other.el"))
 (defconst psgml-xemacs-files '("psgml-lucid.el"))

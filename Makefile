@@ -13,7 +13,7 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
 PACKAGE = psgml
-VERSION = 1a12
+VERSION = 1.0
 
 SHELL = /bin/sh
                           # Right now we do not need it.
@@ -35,17 +35,15 @@ INSTALL_DATA = ${INSTALL} -m 644
 
 ELSRC =	psgml.el psgml-parse.el psgml-edit.el psgml-dtd.el \
 	psgml-info.el psgml-charent.el psgml-api.el \
-	psgml-other.el psgml-lucid.el \
-	psgml-debug.el fs.el
+	psgml-other.el psgml-lucid.el 
 ELC =	psgml.elc psgml-parse.elc psgml-edit.elc psgml-dtd.elc \
-	psgml-info.elc psgml-charent.elc psgml-api.elc \
-	psgml-debug.elc fs.elc
+	psgml-info.elc psgml-charent.elc psgml-api.elc
 NELC = 	psgml-other.elc
 LELC = 	psgml-lucid.elc
 
 ALL_ELC = $(ELC) $(NELC) $(LELC)
 
-OTHERS = README.psgml catalog.sgml style.fs iso88591.map psgml-maint.el \
+OTHERS = README.psgml iso88591.map psgml-maint.el \
 ChangeLog
 DOC_FILES = psgml-api.info psgml-api.texi psgml.info psgml.ps psgml.texi
 AUTOCONF_FILES = Makefile.in aclocal.m4 configure configure.in \
@@ -131,13 +129,14 @@ disttree:
 	mkdir $(DISTDIR)
 	# cp $(ELFILES) $(DISTDIR)
 	cp $(DISTFILES) $(DISTDIR)
+	cp Makefile.def $(DISTDIR)/Makefile
 
 # For understanding the following see the autoconf manual.
 configure: configure.in aclocal.m4
 	cd $(srcdir) && rm -f configure && autoconf
 
-#Makefile: Makefile.in config.status
-#	$(SHELL) ./config.status
+Makefile: Makefile.in config.status
+	$(SHELL) ./config.status
 
 config.status: configure
 	$(SHELL) ./config.status --recheck
