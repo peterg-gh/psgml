@@ -1,6 +1,6 @@
 ;;;; psgml-info.el
-;;; Last edited: Wed Mar 20 21:24:16 1996 by lenst@triton.lstaflin.pp.se (Lennart Staflin)
-;;; $Id: psgml-info.el,v 2.4 1996/03/31 21:31:38 lenst Exp $
+;;; Last edited: 1998-11-25 21:34:05 lenst
+;;; $Id: psgml-info.el,v 2.8 1998/12/06 20:56:18 lenst Exp $
 
 ;; Copyright (C) 1994, 1995 Lennart Staflin
 
@@ -20,6 +20,7 @@
 ;; along with this program; if not, write to the Free Software
 ;; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+Next page...
 
 ;;;; Commentary:
 
@@ -181,7 +182,7 @@
        (cons (sgml-eltype-name eltype)
 	     (mapcar (function sgml-eltype-name)
 		     (sgml-eltype-refrenced-elements eltype))))))
-   "Elements refrenced by elements"
+   "Elements referenced by elements"
    "Element" "Content"))
 
 (defun sgml-list-occur-in-elements ()
@@ -222,7 +223,7 @@
       (setq table (sort table (function (lambda (a b)
 					  (string< (car a) (car b)))))))
     (loop for e in table do
-	  (insert (format "%s" (car e)))
+	  (insert (format "%s " (car e)))
 	  (loop for name in (if nosort
 				(cdr e)
 			      (sort (cdr e) (function string-lessp)))
@@ -273,7 +274,8 @@
 			    (format "a %s entity"
 				    (sgml-entity-type entity))))))
       (when entity
-	(let ((text (sgml-entity-text entity)))
+	(let ((text (sgml-entity-text entity))
+	      (notation (sgml-entity-notation entity)))
 	  (cond ((stringp text)
 		 (princ "Defined to be:\n")
 		 (princ text))
@@ -283,11 +285,24 @@
 		 (when (car text)
 		   (princ (format " '%s'" (car text))))
 		 (when (cdr text)
-		   (princ (format " '%s'" (cdr text)))))))))))
+		   (princ (format " '%s'" (cdr text))))
+		 (when notation
+		   (princ (format "\nand notation '%s'" notation))))))))))
 
 
 
 ;;;; Describe element type
+
+(defun sgml-princ-names (names)
+  (loop with col = 0
+	for name in names
+	do
+	(when (and (> col 0) (> (+ col (length name) 1) fill-column))
+	  (princ "\n")
+	  (setq col 0))
+	(princ " ") (princ name)
+	(incf col (length name))
+	(incf col 1)))
 
 (defun sgml-describe-element-type (et-name)
   "Describe the properties of an element type as declared in the current DTD."
@@ -328,13 +343,13 @@
 		  (defl (sgml-attdecl-default-value attdecl)))
 	      (when (listp dval)
 		(setq dval (concat (if (eq (first dval)
-					   'notation)
+					   'NOTATION)
 				       "#NOTATION (" "(")
 				   (mapconcat (function identity)
 					      (second dval)
 					      "|")
 				   ")")))
-	      (cond ((sgml-default-value-type-p 'fixed defl)
+	      (cond ((sgml-default-value-type-p 'FIXED defl)
 		     (setq defl (format "#FIXED '%s'"
 					(sgml-default-value-attval defl))))
 		    ((symbolp defl)
@@ -348,7 +363,16 @@
 	(when s
 	  (princ (format "\nUSEMAP: %s\n" s))))
       ;; ----
-      (princ "\nOCCURS IN:\n\n")
+      (princ "\nCONTENT: ")
+      (cond ((symbolp (sgml-eltype-model et)) (princ (sgml-eltype-model et)))
+	    (t
+	     (princ (if (sgml-eltype-mixed et) "mixed\n\n"
+		       "element\n\n"))	     
+	     (sgml-princ-names
+	      (mapcar #'symbol-name (sgml-eltype-refrenced-elements et)))))
+
+      ;; ----
+      (princ "\n\nOCCURS IN:\n\n")
       (let ((occurs-in ()))
 	(sgml-map-eltypes
 	 (function (lambda (cand)

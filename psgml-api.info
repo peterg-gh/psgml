@@ -1,5 +1,5 @@
-This is Info file psgml-api.info, produced by Makeinfo-1.55 from the
-input file psgml-api.texi.
+This is psgml-api.info, produced by Makeinfo version 3.12f from
+psgml-api.texi.
 
 START-INFO-DIR-ENTRY
 * PSGML-API: (psgml-api).  PSGML, the API documentation.
@@ -36,7 +36,7 @@ PSGML Internals
 * Implementation::              Implementation notes
 * Index::                       Index
 
- -- The Detailed Node Listing --
+ --- The Detailed Node Listing ---
 
 Types and operations
 
@@ -81,24 +81,24 @@ The element structure
 Mapping buffer positions to elements
 ------------------------------------
 
- - Function: sgml-find-context-of POS
+ - Function: sgml-find-context-of pos
      Return the element current at buffer position POS.  If POS is in
      markup, `sgml-markup-type' will be a symbol identifying the markup
      type.  It will be `nil' if POS is outside markup.
 
- - Function: sgml-find-element-of POS
+ - Function: sgml-find-element-of pos
      Return the element containing the character at buffer position POS.
 
 Functions operating on elements
 -------------------------------
 
- - Function: sgml-element-name ELEMENT
+ - Function: sgml-element-name element
      Returns the name of the element.  (obsolete)
 
- - Function: sgml-element-gi ELEMENT
+ - Function: sgml-element-gi element
      Return the general identifier (string) of ELEMENT.
 
- - Function: sgml-element-level ELEMENT
+ - Function: sgml-element-level element
      Returns the level of ELEMENT in the element structure.  The
      document element is level 1.
 
@@ -108,15 +108,15 @@ Structure
  - Function: sgml-top-element
      Return the document element.
 
- - Function: sgml-off-top-p ELEMENT
+ - Function: sgml-off-top-p element
      True if ELEMENT is the pseudo element above the document element.
 
    These functions return other related elements, or possibly `nil'.
 
- - Function: sgml-element-content ELEMENT
+ - Function: sgml-element-content element
      First element in content of ELEMENT, or nil.
 
- - Function: sgml-element-next ELEMENT
+ - Function: sgml-element-next element
      Next sibling of ELEMENT.  To loop thru all sub elements of an
      element, `el', You could do like this:
 
@@ -125,27 +125,27 @@ Structure
                   <<Do something with c>>
                   (setq c (sgml-element-next c))))
 
- - Function: sgml-element-parent ELEMENT
+ - Function: sgml-element-parent element
      Parent of ELEMENT.
 
 Tags
 ....
 
- - Function: sgml-element-stag-optional ELEMENT
+ - Function: sgml-element-stag-optional element
      Return true if the start-tag of ELEMENT is omissible.
 
- - Function: sgml-element-etag-optional ELEMENT
+ - Function: sgml-element-etag-optional element
      Return true if the end-tag of ELEMENT is omissible.
 
- - Function: sgml-element-stag-len ELEMENT
+ - Function: sgml-element-stag-len element
      Return the length of the start-tag of ELEMENT.  If the start-tag
      has been omitted the length is 0.
 
- - Function: sgml-element-etag-len ELEMENT
+ - Function: sgml-element-etag-len element
      Return the length of the end-tag of ELEMENT.  If the end-tag has
      been omitted the length is 0.
 
- - Function: sgml-element-net-enabled ELEMENT
+ - Function: sgml-element-net-enabled element
      Return true, if ELEMENT or some parent of the element has null end
      tag (NET) enabled.  Return `t', if it is ELEMENT that has NET
      enabled.
@@ -155,52 +155,52 @@ Positions
 
    These functions relates an element to positions in the buffer.
 
- - Function: sgml-element-start ELEMENT
+ - Function: sgml-element-start element
      Position of start of ELEMENT.
 
- - Function: sgml-element-end ELEMENT
+ - Function: sgml-element-end element
      Position after ELEMENT.
 
- - Function: sgml-element-stag-end ELEMENT
+ - Function: sgml-element-stag-end element
      Position after start-tag of ELEMENT.
 
- - Function: sgml-element-etag-start ELEMENT
+ - Function: sgml-element-etag-start element
      Position before end-tag of ELEMENT.
 
 Attributes
 ..........
 
- - Function: sgml-element-attlist ELEMENT
+ - Function: sgml-element-attlist element
      Return the attribute declaration list for ELEMENT.
 
- - Function: sgml-element-attribute-specification-list ELEMENT
+ - Function: sgml-element-attribute-specification-list element
      Return the attribute specification list for ELEMENT.
 
- - Function: sgml-element-attval ELEMENT ATTRIBUTE
+ - Function: sgml-element-attval element attribute
      Return the value of the ATTRIBUTE in ELEMENT, string or nil.
 
 Misc technical
 ..............
 
- - Function: sgml-element-data-p ELEMENT
+ - Function: sgml-element-data-p element
      True if ELEMENT can contain data characters.
 
- - Function: sgml-element-mixed ELEMENT
+ - Function: sgml-element-mixed element
      True if ELEMENT has mixed content.
 
- - Function: sgml-element-eltype ELEMENT
+ - Function: sgml-element-eltype element
 
- - Function: sgml-element-empty ELEMENT
+ - Function: sgml-element-empty element
      True if ELEMENT is empty.
 
- - Function: sgml-element-excludes ELEMENT
+ - Function: sgml-element-excludes element
 
- - Function: sgml-element-includes ELEMENT
+ - Function: sgml-element-includes element
 
- - Function: sgml-element-model ELEMENT
+ - Function: sgml-element-model element
      Declared content or content model of ELEMENT.
 
- - Function: sgml-element-context-string ELEMENT
+ - Function: sgml-element-context-string element
      Return string describing context of ELEMENT.
 
 
@@ -219,11 +219,11 @@ Attribute Declaration List Type
      This is the result of the ATTLIST declarations in the DTD.  All
      attribute declarations for an element is the elements attlist.
 
- - Function: sgml-lookup-attdecl NAME ATTLIST
+ - Function: sgml-lookup-attdecl name attlist
      Return attribute declaration (attdecl) for attribute NAME in
      attribute declaration list ATTLIST.
 
- - Function: sgml-attribute-with-declared-value ATTLIST DECLARED-VALUE
+ - Function: sgml-attribute-with-declared-value attlist declared-value
      Find the first attribute in ATTLIST that has DECLARED-VALUE.
 
 Attribute Declaration Type
@@ -233,16 +233,16 @@ Attribute Declaration Type
      This is the representation of an individual attribute declaration
      contained in an ATTLIST declaration.
 
- - Function: sgml-make-attdecl NAME DECLARED-VALUE DEFAULT-VALUE
+ - Function: sgml-make-attdecl name declared-value default-value
      Produces an attdecl.
 
- - Function: sgml-attdecl-name ATTDECL
+ - Function: sgml-attdecl-name attdecl
      Returns the name of an attribute declaration.
 
- - Function: sgml-attdecl-declared-value ATTDECL
+ - Function: sgml-attdecl-declared-value attdecl
      Returns the declared-value of attribute declaration ATTDECL.
 
- - Function: sgml-attdecl-default-value: ATTDECL
+ - Function: sgml-attdecl-default-value: attdecl
      Returns the default-value of attribute declaration ATTDECL.
 
 Declared Value Type
@@ -255,11 +255,11 @@ Declared Value Type
      names, the allowed notation names.  The other declared values are
      represented by the type name as a lisp symbol.
 
- - Function: sgml-declared-value-token-group DECLARED-VALUE
+ - Function: sgml-declared-value-token-group declared-value
      Return the name token group for the DECLARED-VALUE.  This applies
      to name token groups.  For other declared values nil is returned.
 
- - Function: sgml-declared-value-notation DECLARED-VALUE
+ - Function: sgml-declared-value-notation declared-value
      Return the list of notation names for the DECLARED-VALUE.  This
      applies to notation declared value.  For other declared values nil
      is returned.
@@ -272,13 +272,13 @@ Default Value Type
      and CONREF has no associated information.  The SPECIFIED have an
      associated attribute value and can be either `fixed' or `normal'.
 
- - Function: sgml-make-default-value TYPE &optional ATTVAL
+ - Function: sgml-make-default-value type &optional attval
 
- - Function: sgml-default-value-attval DEFAULT-VALUE
+ - Function: sgml-default-value-attval default-value
      Return the actual default value of the declared DEFAULT-VALUE.
      The actual value is a string. Return `nil' if no actual value.
 
- - Function: sgml-default-value-type-p TYPE DEFAULT-VALUE
+ - Function: sgml-default-value-type-p type default-value
      Return true if DEFAULT-VALUE is of TYPE.  Where TYPE is a symbol,
      one of `required', `implied', `conref', or `fixed'.
 
@@ -288,14 +288,14 @@ Attribute Specification Type
  - Data type: attspec name attval
      This is the result of parsing an attribute specification.
 
- - Function: sgml-make-attspec NAME ATTVAL
+ - Function: sgml-make-attspec name attval
      Create an attspec from NAME and ATTVAL.  Special case, if ATTVAL
      is `nil' this is an implied attribute.
 
- - Function: sgml-attspec-name ATTSPEC
+ - Function: sgml-attspec-name attspec
      Return the name of the attribute specified by ATTSPEC.
 
- - Function: sgml-attspec-attval ATTSPEC
+ - Function: sgml-attspec-attval attspec
      Return the value (attval) of attribute specification ATTSPEC.  If
      ATTSPEC is `nil', `nil' is returned.
 
@@ -305,7 +305,7 @@ Attribute Specification List Type
  - Data type: asl attspec*
      This is the result of parsing an attribute specification list.
 
- - Function: sgml-lookup-attspec NAME ASL
+ - Function: sgml-lookup-attspec name asl
      Return the attribute specification for attribute with NAME in the
      attribute specification list ASL.  If the attribute is unspecified
      `nil' is returned.
@@ -327,7 +327,7 @@ initialised from this variable when parsing starts.
  - Data type: pstate
      The parser state.
 
- - Function: sgml-pstate-dtd PSTATE
+ - Function: sgml-pstate-dtd pstate
      The document type information (dtd) for the parser.
 
 
@@ -339,22 +339,22 @@ DTD
  - Data type: dtd
      Represents what PSGML knows about the DTD.
 
- - Function: sgml-dtd-doctype DTD
+ - Function: sgml-dtd-doctype dtd
      The document type name.
 
- - Function: sgml-dtd-eltypes DTD
+ - Function: sgml-dtd-eltypes dtd
      The table of element types.
 
- - Function: sgml-dtd-entities DTD
+ - Function: sgml-dtd-entities dtd
      The table of declared general entities (entity-table).
 
- - Function: sgml-dtd-parameters DTD
+ - Function: sgml-dtd-parameters dtd
      The table of declared parameter entities (entity-table).
 
- - Function: sgml-dtd-shortmaps DTD
+ - Function: sgml-dtd-shortmaps dtd
      The list of short reference maps.
 
- - Function: sgml-dtd-notations DTD
+ - Function: sgml-dtd-notations dtd
      Not yet implemented.
 
 
@@ -382,39 +382,39 @@ Entities
 
    Operations on entities
 
- - Function: sgml-make-entity NAME TYPE TEXT
+ - Function: sgml-make-entity name type text
      Create an entity.
 
- - Function: sgml-entity-name ENTITY
+ - Function: sgml-entity-name entity
      The name of the entity.
 
- - Function: sgml-entity-type ENTITY
+ - Function: sgml-entity-type entity
      The type of the entity.
 
- - Function: sgml-entity-text ENTITY
+ - Function: sgml-entity-text entity
      The text of the entity.
 
- - Function: sgml-entity-insert-text ENTITY
+ - Function: sgml-entity-insert-text entity
      Insert the text of the entity into the current buffer at point.
 
- - Function: sgml-entity-data-p ENTITY
+ - Function: sgml-entity-data-p entity
      True if ENTITY is a data entity, that is not of type `text'.
 
  - Data type: entity-table
      A table of entities that can be referenced by entity name.
 
- - Function: sgml-lookup-entity NAME ENTITY-TABLE
+ - Function: sgml-lookup-entity name entity-table
      The entity with named NAME in the table ENTITY-TABLE.  If no such
      entity exists, `nil' is returned.
 
- - Function: sgml-entity-declare NAME ENTITY-TABLE TYPE TEXT
+ - Function: sgml-entity-declare name entity-table type text
      Create an entity from NAME, TYPE and TEXT; and enter the entity
      into the table ENTITY-TABLE.
 
- - Function: sgml-entity-completion-table ENTITY-TABLE
+ - Function: sgml-entity-completion-table entity-table
      Make a completion table from the ENTITY-TABLE.
 
- - Function: sgml-map-entities FN ENTITY-TABLE &optional COLLECT
+ - Function: sgml-map-entities fn entity-table &optional collect
      Apply the function FN to all entities in ENTITY-TABLE.  If COLLECT
      is `t', the results of the applications are collected in a list
      and returned.
@@ -483,10 +483,10 @@ to store three flags and the function definition holds the content
 model.  Other information about the element type is stored on the
 property list.
 
- - Function: sgml-eltype-name ET
+ - Function: sgml-eltype-name et
      The name (a string) of the element type ET.
 
- - Function: sgml-eltype-appdata ET PROP
+ - Function: sgml-eltype-appdata et prop
      Get application data from element type ET with name PROP.  PROP
      should be a symbol, reserved names are: flags, model, attlist,
      includes, excludes, conref-regexp, mixed, stag-optional,
@@ -495,53 +495,53 @@ property list.
      This function can be used as a place in `setf', `push' and other
      functions from the CL library.
 
- - Function: sgml-eltype-all-miscdata ELTYPE
+ - Function: sgml-eltype-all-miscdata eltype
      A list of all data properties for eltype except for flags, model,
      includes and excludes.  This function filters the property list of
      ELTYPE.  Used when saving the parsed DTD.
 
- - Function: sgml-eltype-set-all-miscdata ELTYPE MISCDATA
+ - Function: sgml-eltype-set-all-miscdata eltype miscdata
      Append the MISCDATA data properties to the properties of ELTYPE.
 
- - Function: sgml-eltype-attlist ET
+ - Function: sgml-eltype-attlist et
      The attribute specification list for the element type ET.
 
- - Function: sgml-eltype-completion-table ELTYPES
+ - Function: sgml-eltype-completion-table eltypes
      Make a completion table from a list, ELTYPES, of element types.
 
- - Function: sgml-eltype-stag-optional ET
+ - Function: sgml-eltype-stag-optional et
      True if the element type ET has optional start-tag.
 
- - Function: sgml-eltype-etag-optional ET
+ - Function: sgml-eltype-etag-optional et
      True if the element type ET has optional end-tag.
 
- - Function: sgml-eltype-excludes ET
+ - Function: sgml-eltype-excludes et
      The list of excluded element types for element type ET.
 
- - Function: sgml-eltype-includes ET
+ - Function: sgml-eltype-includes et
      The list of included element types for element type ET.
 
- - Function: sgml-eltype-flags ET
+ - Function: sgml-eltype-flags et
      Contains three flags as a number.  The flags are stag-optional,
      etag-optional and mixed.
 
- - Function: sgml-eltype-mixed ET
+ - Function: sgml-eltype-mixed et
      True if element type ET has mixed content.
 
- - Function: sgml-eltype-model ET
+ - Function: sgml-eltype-model et
      The content model of element type ET.  The content model is either
      the start state in the DFA for the content model or a symbol
      identifying a declared content.
 
- - Function: sgml-eltype-shortmap ET
+ - Function: sgml-eltype-shortmap et
      The name of the shortmap associated with element type ET.  This
      can also be the symbol `empty' (if declared with a `<!USEMAP gi
      #EMPTY>' or `nil' (if no associated map).
 
- - Function: sgml-eltype-token ET
+ - Function: sgml-eltype-token et
      Return a token for the element type ET.
 
- - Function: sgml-eltypes-in-state STATE TREE
+ - Function: sgml-eltypes-in-state state tree
      List of element types valid in STATE and TREE.
 
 DTD
@@ -552,10 +552,10 @@ DTD
    There are two additional fields for internal use: dependencies and
 merged.
 
- - Function: sgml-dtd-dependencies DTD
+ - Function: sgml-dtd-dependencies dtd
      The list of files used to create this DTD.
 
- - Function: sgml-dtd-merged DTD
+ - Function: sgml-dtd-merged dtd
      The pair (FILE . MERGED-DTD), if the DTD has had a precompiled dtd
      merged into it.  FILE is the file containing the compiled DTD and
      MERGED-DTD is the DTD loaded from that file.
@@ -610,9 +610,9 @@ type.  The parser only sees states in a DFA and moves.
 Entity manager
 ==============
 
- - Function: sgml-push-to-entity ENTITY &optional REF-START TYPE
+ - Function: sgml-push-to-entity entity &optional ref-start type
      Set current buffer to a buffer containing the entity ENTITY.
-     eNTITY can also be a file name. Optional argument REF-START should
+     ENTITY can also be a file name. Optional argument REF-START should
      be the start point of the entity reference. Optional argument
      TYPE, overrides the entity type in entity look up.
 
@@ -621,7 +621,7 @@ Entity manager
      Restore the current buffer to the buffer that was current when the
      push to this buffer was made.
 
- - Function: sgml-push-to-string STRING
+ - Function: sgml-push-to-string string
      Create an entity from STRING and push it on the top of the entity
      stack. After this the current buffer will be a scratch buffer
      containing the text of the new entity with point at the first
@@ -637,7 +637,7 @@ Parser functions
      needed by parsing routines. One global variable is `sgml-dtd-info'
      which contain the DTD (type dtd).
 
- - Function: sgml-parse-to GOAL &optional EXTRA-COND QUIET
+ - Function: sgml-parse-to goal &optional extra-cond quiet
      This is the low level interface to the parser.
 
      Parse until (at least) GOAL, a buffer position. Optional argument
@@ -646,7 +646,7 @@ Parser functions
      third argument QUIT is non-`nil', no "`Parsing...'" message will
      be displayed.
 
- - Function: sgml-reparse-buffer SHORTREF-FUN
+ - Function: sgml-reparse-buffer shortref-fun
      Reparse the buffer and let SHORTREF-FUN take care of short
      references.  SHORTREF-FUN is called with the entity as argument
      and `sgml-markup-start' pointing to start of short reference and
@@ -740,32 +740,32 @@ Index
 
 * Menu:
 
-* asl:                                  attribute.
-* attdecl:                              attribute.
-* attlist:                              attribute.
-* attspec:                              attribute.
-* declared-value:                       attribute.
-* default-value:                        attribute.
-* dtd:                                  DTD.
-* element:                              element.
-* eltype:                               Implementation.
-* entity:                               entities.
-* entity-table:                         entities.
-* pstate:                               parser state.
-* tree:                                 Implementation.
+* asl:                                   attribute.
+* attdecl:                               attribute.
+* attlist:                               attribute.
+* attspec:                               attribute.
+* declared-value:                        attribute.
+* default-value:                         attribute.
+* dtd:                                   DTD.
+* element:                               element.
+* eltype:                                Implementation.
+* entity:                                entities.
+* entity-table:                          entities.
+* pstate:                                parser state.
+* tree:                                  Implementation.
 
 
 
 Tag Table:
-Node: Top960
-Node: Types1542
-Node: element2261
-Node: attribute6181
-Node: parser state10178
-Node: DTD10766
-Node: entities11395
-Node: Hooks13310
-Node: Implementation15042
-Node: Index24625
+Node: Top944
+Node: Types1528
+Node: element2247
+Node: attribute6167
+Node: parser state10164
+Node: DTD10752
+Node: entities11381
+Node: Hooks13296
+Node: Implementation15028
+Node: Index24611
 
 End Tag Table

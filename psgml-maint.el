@@ -3,7 +3,7 @@
 ;; Copyright (C) 1996 Lennart Staflin
 
 ;; Author: Lennart Staflin <lenst@lysator.liu.se>
-;; Version: $Id: psgml-maint.el,v 1.3 1997/07/24 20:56:16 lenst Exp $
+;; Version: $Id: psgml-maint.el,v 1.4 1998/11/15 19:34:41 lenst Exp $
 ;; Keywords: 
 ;; Last edited: 1996-11-14 17:26:31 lenst
 
@@ -48,7 +48,8 @@
 
 (defconst psgml-elisp-source
   (append psgml-common-files
-	  (cond ((string-match "lucid" emacs-version)
+	  (cond ((or (string-match "Lucid" emacs-version)
+		     (string-match "XEmacs" emacs-version))
 		 psgml-xemacs-files)
 		(t
 		 psgml-emacs-files))))
@@ -57,7 +58,7 @@
 (defun psgml-find-source-dir (&optional ask)
   (if psgml-source-dir
       t 
-    (let ((cand (list "." "./psgml-1.0.2")))
+    (let ((cand (list "." "./psgml-1.1.6")))
       (while cand
 	(if (file-exists-p (expand-file-name "psgml-maint.el" (car cand)))
 	    (progn

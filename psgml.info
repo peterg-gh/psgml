@@ -1,5 +1,4 @@
-This is Info file psgml.info, produced by Makeinfo version 1.66 from
-the input file psgml.texi.
+This is psgml.info, produced by Makeinfo version 3.12f from psgml.texi.
 
 START-INFO-DIR-ENTRY
 * PSGML: (psgml).          PSGML, a major mode for SGML documents.
@@ -7,7 +6,7 @@ END-INFO-DIR-ENTRY
 
    Documentation for PSGML, a major mode for SGML.
 
-   Copyright 1994, 1996 Lennart Staflin
+   Copyright 1994, 1996, 1998 Lennart Staflin
 
    Permission is granted to make and distribute verbatim copies of this
 manual provided the copyright notice and this permission notice are
@@ -30,7 +29,7 @@ PSGML
 *****
 
    PSGML is a major mode for editing SGML documents.  This is the DRAFT
-documentation for PSGML version 1.0.
+documentation for PSGML version 1.2.
 
 * Menu:
 
@@ -53,13 +52,13 @@ File: psgml.info,  Node: Introduction,  Next: Install,  Prev: Top,  Up: Top
 Introduction
 ************
 
-   PSGML is a major mode for editing SGML documents.  It works with GNU
-Emacs 19.19 and later or with Lucid Emacs 19.9 and later.  PSGML
-contains a simple SGML parser and can work with any DTD.  Functions
-provided includes menus and commands for inserting tags with only the
-contextually valid tags, identification of structural errors, editing of
-attribute values in a separate window with information about types and
-defaults, and structure based editing.
+   PSGML is a major mode for editing SGML and XML documents.  It works
+with GNU Emacs 19.34, 20.3 and later or with XEmacs 19.9 and later.
+PSGML contains a simple SGML parser and can work with any DTD.
+Functions provided includes menus and commands for inserting tags with
+only the contextually valid tags, identification of structural errors,
+editing of attribute values in a separate window with information about
+types and defaults, and structure based editing.
 
    SGML, a language for encoding the structure of a document, is an ISO
 standard: ISO 8879:1986 "Information processing - Text and office
@@ -118,7 +117,7 @@ Installing PSGML
    To install PSGML you first need to uncompress and unpack the source
 archive.  This is done with the `gunzip' and `tar' commands.
 
-     gunzip psgml-1.0.1.tar.gz; tar xf psgml-1.0.1.tar
+     gunzip psgml-1.2.0.tar.gz; tar xf psgml-1.2.0.tar
 
    This should create a subdirectory to the current directory with the
 source code. This directory contains a `configure' command (see the
@@ -139,7 +138,8 @@ subdirectory is in Emacs `load-path'.
 
    Put the following line in your .emacs:
 
-     (autoload 'sgml-mode "psgml" "Major mode to edit SGML files." t )
+     (autoload 'sgml-mode "psgml" "Major mode to edit SGML files." t)
+     (autoload 'xml-mode "psgml" "Major mode to edit XML files." t)
 
    You may also want to set up search paths for external entities,
 *Note Entity manager::.
@@ -160,10 +160,11 @@ File: psgml.info,  Node: Invoke,  Next: Entity manager,  Prev: Install,  Up: Top
 How to invoke PSGML
 *******************
 
-   PSGML defines a major mode called `sgml-mode'.  Files with
-extensions `.sgml', `.sgm' or `.dtd' will automatically be edited in
-SGML mode.  To edit some other file in sgml mode, type `M-x sgml-mode
-<RET>' after finding the file.
+   PSGML defines a major modes called `sgml-mode' and `xml-mode'.
+Files with extensions `.sgml', `.sgm' or `.dtd' will automatically be
+edited in SGML mode.  To edit some other file in SGML mode, type `M-x
+sgml-mode <RET>' after finding the file.  To edit XML files, type `M-x
+xml-mode <RET>'.
 
    If you can modify the file you can add a "Local Variables" list
 (*note Local Variables in Files: (emacs)file variables.) to the end of
@@ -182,8 +183,9 @@ sgml mode:
 
      <!-- -*- sgml -*- -->
 
-   But remember that you can't have a comment before the *SGML
-declaration*.
+   For XML replace `sgml' with `xml' in the above examples.  But
+remember that you can't have a comment before the _SGML declaration_ or
+the _XML declaration_.
 
 
 File: psgml.info,  Node: Entity manager,  Next: Validate,  Prev: Invoke,  Up: Top
@@ -191,8 +193,8 @@ File: psgml.info,  Node: Entity manager,  Next: Validate,  Prev: Invoke,  Up: To
 The Entity Manager
 ******************
 
-   SGML can refer to an external file (really entity) with an *external
-identifier*, this is a *public identifier* or a *system identifier*, or
+   SGML can refer to an external file (really entity) with an _external
+identifier_, this is a _public identifier_ or a _system identifier_, or
 both.
 
    A typical public identifier looks like
@@ -1110,6 +1112,7 @@ names, e.g. "å" -> "[aring ]", e.t.c.
    The use the functions (also in the Modify menu)
 
 `sgml-charent-to-display-char'
+
 `sgml-display-char-to-charent'
    to translate between entities and characters.
 
@@ -1286,6 +1289,13 @@ Index
 * <LFD>:                                 Indent.
 * <TAB> <1>:                             Attributes.
 * <TAB>:                                 Indent.
+* C-M-a:                                 Move.
+* C-M-b:                                 Move.
+* C-M-d:                                 Move.
+* C-M-e:                                 Move.
+* C-M-f:                                 Move.
+* C-M-k:                                 Change and delete.
+* C-M-u:                                 Move.
 * C-a:                                   Attributes.
 * C-c #:                                 Change and delete.
 * C-c +:                                 Insert.
@@ -1320,32 +1330,26 @@ Index
 * C-c C-w:                               Information.
 * C-c RET:                               Insert.
 * C-e:                                   Attributes.
-* C-M-a:                                 Move.
-* C-M-b:                                 Move.
-* C-M-d:                                 Move.
-* C-M-e:                                 Move.
-* C-M-f:                                 Move.
-* C-M-k:                                 Change and delete.
-* C-M-u:                                 Move.
 * CONCUR:                                Introduction.
 * DATATAG:                               Introduction.
 * DOCTYPE:                               Managing the DTD.
 * DTD <1>:                               Information from the DTD.
 * DTD:                                   Managing the DTD.
 * Element:                               Information from the DTD.
+* LINK:                                  Introduction.
+* M-TAB:                                 Complete.
+* OMITTAG:                               SGML declaration.
+* RANK:                                  Introduction.
+* S-<mouse-1>:                           Insert.
+* SGML Declaration:                      Introduction.
+* SHORTTAG:                              SGML declaration.
 * entity:                                Information from the DTD.
 * entity catalog:                        Entity manager.
 * external identifier:                   Entity manager.
 * invoke:                                Invoke.
-* LINK:                                  Introduction.
-* M-TAB:                                 Complete.
 * major mode:                            Invoke.
 * newline-and-indent:                    Indent.
-* OMITTAG:                               SGML declaration.
 * public identifier:                     Entity manager.
-* RANK:                                  Introduction.
-* S-<mouse-1>:                           Insert.
-* SGML Declaration:                      Introduction.
 * sgml-always-quote-attributes:          SGML declaration.
 * sgml-auto-activate-dtd:                Managing the DTD.
 * sgml-auto-insert-required-elements:    Insert.
@@ -1439,40 +1443,39 @@ Index
 * sgml-validate-command:                 Validate.
 * sgml-validate-files:                   Validate.
 * sgml-what-element:                     Information.
-* SHORTTAG:                              SGML declaration.
 * start up:                              Invoke.
 * system identifier:                     Entity manager.
 
 
 
 Tag Table:
-Node: Top976
-Node: Introduction1771
-Node: Install4368
-Node: Invoke6273
-Node: Entity manager7180
-Node: Validate12730
-Node: SGML declaration15256
-Node: Managing the DTD16749
-Node: Precompiled DTD Subsets18028
-Node: Using a Split Document21220
-Node: Inserting a DOCTYPE22776
-Node: Information from the DTD24553
-Node: Edit25619
-Node: Insert26188
-Node: Complete34197
-Node: Information34698
-Node: Indent35865
-Node: Move36527
-Node: Attributes37576
-Node: Change and delete39365
-Node: Translating characters and entities42289
-Node: Display42955
-Node: Fold43239
-Node: Hiding markup44571
-Node: Highlight44714
-Node: Miscellaneous options46088
-Node: Bugs46798
-Node: Index47597
+Node: Top958
+Node: Introduction1753
+Node: Install4357
+Node: Invoke6329
+Node: Entity manager7381
+Node: Validate12931
+Node: SGML declaration15457
+Node: Managing the DTD16950
+Node: Precompiled DTD Subsets18229
+Node: Using a Split Document21421
+Node: Inserting a DOCTYPE22977
+Node: Information from the DTD24754
+Node: Edit25820
+Node: Insert26389
+Node: Complete34398
+Node: Information34899
+Node: Indent36066
+Node: Move36728
+Node: Attributes37777
+Node: Change and delete39566
+Node: Translating characters and entities42490
+Node: Display43157
+Node: Fold43441
+Node: Hiding markup44773
+Node: Highlight44916
+Node: Miscellaneous options46290
+Node: Bugs47000
+Node: Index47799
 
 End Tag Table

@@ -1,5 +1,5 @@
 ;;;; psgml-other.el --- Part of SGML-editing mode with parsing support
-;; $Id: psgml-other.el,v 2.15 1996/11/11 00:43:18 lenst Exp $
+;; $Id: psgml-other.el,v 2.16 1999/06/16 18:24:15 lenst Exp $
 
 ;; Copyright (C) 1994 Lennart Staflin
 
@@ -122,6 +122,7 @@ if the item is selected."
 	    old-overlay)
 	(while current
 	  (cond ((and (null old-overlay)
+                      type
 		      (eq type (overlay-get (car current) 'sgml-type)))
 		 (setq old-overlay (car current)))
 		((overlay-get (car current) 'sgml-type)

@@ -1,7 +1,7 @@
 ;;; psgml.el --- SGML-editing mode with parsing support
-;; $Id: psgml.el,v 2.23 1998/10/23 19:03:50 lenst Exp $
+;; $Id: psgml.el,v 2.48 1999/10/10 13:48:38 lenst Exp $
 
-;; Copyright (C) 1993, 1994, 1995, 1996, 1997 Lennart Staflin
+;; Copyright (C) 1993-1999 Lennart Staflin
 ;; Copyright (C) 1992 Free Software Foundation, Inc.
 
 ;; Author: Lennart Staflin <lenst@lysator.liu.se>
@@ -52,7 +52,7 @@
 
 ;;; Code:
 
-(defconst psgml-version "1.0.3"
+(defconst psgml-version "1.2.0"
   "Version of psgml package.")
 
 (defconst psgml-maintainer-address "lenst@lysator.liu.se")
@@ -73,6 +73,10 @@
 (define-abbrev-table 'sgml-mode-abbrev-table ())
 
 (defvar sgml-running-lucid (string-match "Lucid" emacs-version))
+
+(defvar sgml-xml-p nil
+  "Is this an XML document?")
+(make-variable-buffer-local 'sgml-xml-p)
 
 ;;; User settable options:
 
@@ -135,7 +139,8 @@ shortref- short reference")
 (defvar sgml-buggy-subst-char-in-region 
   (or (not (boundp 'emacs-minor-version))
       (not (natnump emacs-minor-version))
-      (< emacs-minor-version 23))
+      (and (eq emacs-major-version 19)
+           (< emacs-minor-version 23)))
   "*If non-nil, work around a bug in subst-char-in-region.
 The bug sets the buffer modified.  If this is set, folding commands
 will be slower.")
@@ -210,6 +215,28 @@ Setting this variable automatically makes it local to the current buffer.")
 (make-variable-buffer-local 'sgml-shorttag)
 (put 'sgml-shorttag 'sgml-desc "SHORTTAG")
 
+(defvar sgml-namecase-general t
+  "*Set to non-nil, if you use NAMECASE GENERAL YES.
+
+Setting this variable automatically makes it local to the current buffer.")
+
+(make-variable-buffer-local 'sgml-namecase-general)
+(put 'sgml-namecase-general 'sgml-desc "NAMECASE GENERAL")
+
+
+
+;;[lenst/1998-03-09 19:51:55]
+(defconst sgml-namecase-entity nil)
+
+(defvar sgml-general-insert-case 'lower
+  "*The case that will be used for general names in inserted markup.
+This can be the symbol `lower' or `upper'. Only effective if
+sgml-namecase-general is true.")
+(put 'sgml-general-insert-case 'sgml-type '(lower upper))
+
+(defvar sgml-entity-insert-case nil)
+
+
 (defvar sgml-minimize-attributes nil
   "*Determines minimization of attributes inserted by edit-attributes.
 Actually two things are done
@@ -281,11 +308,6 @@ Setting this variable automatically makes it local to the current buffer.")
 Setting this variable automatically makes it local to the current buffer.")
 (make-variable-buffer-local 'sgml-indent-data)
 
-(defvar sgml-system-path nil
-  "*Not used any more.
-Used to be list of directories used to look for system identifiers.
-Currently only used by `sgml-load-dtd'.")
-(put 'sgml-system-path 'sgml-type 'list)
 
 (defun sgml-parse-colon-path (cd-path)
   "Explode a colon-separated list of paths into a string list."
@@ -306,8 +328,14 @@ Currently only used by `sgml-load-dtd'.")
 	(setq cd-start (+ cd-colon 1)))
       cd-list)))
 
+(defvar sgml-system-path (sgml-parse-colon-path
+			  (or (getenv "SGML_SEARCH_PATH")
+			      "."))
+  "*List of directories used to look for system identifiers.")
+(put 'sgml-system-path 'sgml-type 'file-list)
+
 (defvar sgml-public-map (or (sgml-parse-colon-path (getenv "SGML_PATH"))
-			    '("%S" "/usr/local/lib/sgml/%o/%c/%d"))
+			    '("%S" "/usr/local/lib/sgml/%o/%c/%d" ))
   "*Mapping from public identifiers to file names.
 This is a list of possible file names.  To find the file for a public
 identifier the elements of the list are used one at the time from the
@@ -328,26 +356,27 @@ identifier.")
 This is used in addtion to `sgml-catalog-files',  and `sgml-public-map'.
 This variable is automatically local to the buffer.")
 (make-variable-buffer-local 'sgml-local-catalogs)
-(put 'sgml-local-catalogs 'sgml-type 'list)
+(put 'sgml-local-catalogs 'sgml-type 'file-list)
 
-(defvar sgml-catalog-files (or (sgml-parse-colon-path
-				(getenv "SGML_CATALOG_FILES"))
-			       '("CATALOG" "/usr/local/lib/sgml/CATALOG"))
+(defvar sgml-catalog-files (or (delete nil
+				       (sgml-parse-colon-path
+					(getenv "SGML_CATALOG_FILES")))
+			       '("catalog" "/usr/local/lib/sgml/catalog"))
   "*List of catalog entry files.
 The files are in the format defined in the SGML Open Draft Technical
 Resolution on Entity Management.")
-(put 'sgml-catalog-files 'sgml-type 'list)
+(put 'sgml-catalog-files 'sgml-type 'file-list)
 
 (defvar sgml-ecat-files '("ECAT" "~/sgml/ECAT" "/usr/local/lib/sgml/ECAT")
   "*List of catalog files for PSGML.")
-(put 'sgml-ecat-files 'sgml-type 'list)
+(put 'sgml-ecat-files 'sgml-type 'file-list)
 
 (defvar sgml-local-ecat-files nil
   "*List of local catalog files for PSGML.
 Automatically becomes buffer local if set.")
 
 (make-variable-buffer-local 'sgml-local-ecat-files)
-(put 'sgml-local-ecat-files 'sgml-type 'list)
+(put 'sgml-local-ecat-files 'sgml-type 'file-list)
 
 (defvar sgml-public-transliterations '((? . ?_) (?/ . ?%))
   "*Transliteration for characters that should be avoided in file names.
@@ -423,7 +452,7 @@ Example:
 ;;; Its error messages can be parsed by next-error.
 ;;; The -s option suppresses output.
 
-(defvar sgml-validate-command "nsgmls -s %s %s"
+(defvar sgml-validate-command   "nsgmls -s %s %s"
   "*The shell command to validate an SGML document.
 
 This is a `format' control string that by default should contain two
@@ -444,6 +473,7 @@ string will be replaced according to the list below, if the string contains
 %s means the SGML declaration specified in the sgml-declaration variable
 %d means the file containing the DOCTYPE declaration, if not in the buffer 
 ")
+(make-variable-buffer-local 'sgml-validate-command)
 
 (defvar sgml-validate-files nil
   "If non-nil, a function of no arguments that returns a list of file names.
@@ -451,7 +481,7 @@ These file names will serve as the arguments to the `sgml-validate-command'
 format control string instead of the defaults.")
 
 (defvar sgml-validate-error-regexps
-  '((":\\(.+\\):\\([0-9]+\\):\\([0-9]+\\):[EX]: " 1 2 3)
+  '((".*:\\(.+\\):\\([0-9]+\\):\\([0-9]+\\):[EX]: " 1 2 3)
     ("\\(error\\|warning\\) at \\([^,]+\\), line \\([0-9]+\\)" 2 3)
     ("\n[a-zA-Z]?:?[^0-9 \n\t:]+:[ \t]*\\([^ \n\t:]+\\):\
 \\([0-9]+\\):\\(\\([0-9]+\\)[: \t]\\)?" 1 2 4))
@@ -460,7 +490,11 @@ See `compilation-error-regexp-alist'.")
 
 (defvar sgml-declaration nil
   "*If non-nil, this is the name of the SGML declaration file.")
-(put 'sgml-declaration 'sgml-type 'string)
+(put 'sgml-declaration 'sgml-type 'file-or-nil)
+
+(defvar sgml-xml-declaration nil
+  "*If non-nil, this is the name of the SGML declaration for XML files.")
+(put 'sgml-xml-declaration 'sgml-type 'file-or-nil)
 
 (defvar sgml-mode-hook nil
   "A hook or list of hooks to be run when entering sgml-mode")
@@ -469,6 +503,8 @@ See `compilation-error-regexp-alist'.")
   '(
     sgml-omittag
     sgml-shorttag
+    sgml-namecase-general
+    sgml-general-insert-case
     sgml-minimize-attributes
     sgml-always-quote-attributes
     sgml-indent-step
@@ -510,6 +546,7 @@ See `compilation-error-regexp-alist'.")
     sgml-public-map
     sgml-catalog-files
     sgml-ecat-files
+    sgml-general-insert-case
     )
   "User options that can be saved or set from menu."
   )
@@ -564,7 +601,9 @@ See `compilation-error-regexp-alist'.")
 	     (insert
 	      "<!-- Keep this comment at the end of the file\n"
 	      "Local variables:\n"
-	      "mode: sgml\n"
+	      (if sgml-xml-p
+		  "mode: xml\n"
+		"mode: sgml\n")
 	      "End:\n"
 	      "-->\n")
 	     (forward-line -3)))
@@ -693,7 +732,8 @@ as that may change."
        (reporter-submit-bug-report
 	psgml-maintainer-address
 	(concat "psgml.el " psgml-version)
-	(list 
+	(list
+	 'major-mode
 	 'sgml-always-quote-attributes
 	 'sgml-auto-activate-dtd
 	 'sgml-auto-insert-required-elements
@@ -717,7 +757,9 @@ as that may change."
 	 'sgml-public-map
 	 'sgml-set-face
 	 'sgml-shorttag
+	 'sgml-namecase-general
 	 'sgml-tag-region-if-active
+         'sgml-use-text-properties
 	 ))))
 
 
@@ -743,8 +785,14 @@ as that may change."
 (define-key sgml-mode-map "\C-c\C-c" 'sgml-show-context)
 (define-key sgml-mode-map "\C-c\C-d" 'sgml-next-data-field)
 (define-key sgml-mode-map "\C-c\C-e" 'sgml-insert-element)
+(define-key sgml-mode-map "\C-c\C-f\C-e" 'sgml-fold-element)
+(define-key sgml-mode-map "\C-c\C-f\C-r" 'sgml-fold-region)
+(define-key sgml-mode-map "\C-c\C-f\C-s" 'sgml-fold-subelement)
+(define-key sgml-mode-map "\C-c\C-f\C-x" 'sgml-expand-element)
+(define-key sgml-mode-map "\C-c\C-i" 'sgml-add-element-to-element)
 (define-key sgml-mode-map "\C-c\C-k" 'sgml-kill-markup)
 (define-key sgml-mode-map "\C-c\C-l" 'sgml-show-or-clear-log)
+(define-key sgml-mode-map "\C-c\r"   'sgml-split-element)
 (define-key sgml-mode-map "\C-c\C-n" 'sgml-up-element)
 (define-key sgml-mode-map "\C-c\C-o" 'sgml-next-trouble-spot)
 (define-key sgml-mode-map "\C-c\C-p" 'sgml-parse-prolog)
@@ -752,19 +800,14 @@ as that may change."
 (define-key sgml-mode-map "\C-c\C-r" 'sgml-tag-region)
 (define-key sgml-mode-map "\C-c\C-s" 'sgml-unfold-line)
 (define-key sgml-mode-map "\C-c\C-t" 'sgml-list-valid-tags)
+(define-key sgml-mode-map "\C-c\C-u\C-a" 'sgml-unfold-all)
+(define-key sgml-mode-map "\C-c\C-u\C-d" 'sgml-custom-dtd)
+(define-key sgml-mode-map "\C-c\C-u\C-e" 'sgml-unfold-element)
+(define-key sgml-mode-map "\C-c\C-u\C-l" 'sgml-unfold-line)
+(define-key sgml-mode-map "\C-c\C-u\C-m" 'sgml-custom-markup)
 (define-key sgml-mode-map "\C-c\C-v" 'sgml-validate)
 (define-key sgml-mode-map "\C-c\C-w" 'sgml-what-element)
 (define-key sgml-mode-map "\C-c\C-z" 'sgml-trim-and-leave-element)
-(define-key sgml-mode-map "\C-c\C-f\C-e" 'sgml-fold-element)
-(define-key sgml-mode-map "\C-c\C-f\C-r" 'sgml-fold-region)
-(define-key sgml-mode-map "\C-c\C-f\C-s" 'sgml-fold-subelement)
-(define-key sgml-mode-map "\C-c\C-f\C-x" 'sgml-expand-element)
-(define-key sgml-mode-map "\C-c\r"   'sgml-split-element)
-(define-key sgml-mode-map "\C-c\C-u\C-e" 'sgml-unfold-element)
-(define-key sgml-mode-map "\C-c\C-u\C-a" 'sgml-unfold-all)
-(define-key sgml-mode-map "\C-c\C-u\C-l" 'sgml-unfold-line)
-(define-key sgml-mode-map "\C-c\C-u\C-d" 'sgml-custom-dtd)
-(define-key sgml-mode-map "\C-c\C-u\C-m" 'sgml-custom-markup)
 
 (define-key sgml-mode-map "\e\C-a"   'sgml-beginning-of-element)
 (define-key sgml-mode-map "\e\C-e"   'sgml-end-of-element)
@@ -783,11 +826,9 @@ as that may change."
 
 (easy-menu-define
  sgml-dtd-menu sgml-mode-map "DTD menu"
- '("DTD"))
-
-(defconst sgml-dtd-root-menu
-  '("DTD"
+ '("DTD"
     ["Parse DTD"  sgml-parse-prolog t]
+    ("Insert DTD")
     ("Info"
      ["General DTD info"	sgml-general-dtd-info           t]
      ["Describe element type"	sgml-describe-element-type	t]
@@ -801,7 +842,7 @@ as that may change."
     "--"
     ["Load Parsed DTD"  sgml-load-dtd t]
     ["Save Parsed DTD"  sgml-save-dtd t]
-    ))
+   ))
 
 (easy-menu-define
  sgml-view-menu sgml-mode-map "View menu"
@@ -816,23 +857,22 @@ as that may change."
    ["Hide Tags"		sgml-hide-tags		t]
    ["Hide Attributes"	sgml-hide-attributes	t]
    ["Show All Tags"	sgml-show-tags		t]
-   )
- )
+   ))
 
-
-(defconst sgml-markup-root-menu
-  '("Markup"
-    ["Insert Element"	sgml-element-menu	t]
-    ["Insert Start-Tag" sgml-start-tag-menu	t]
-    ["Insert End-Tag"	sgml-end-tag-menu	t]
-    ["Tag Region"	sgml-tag-region-menu	t]
-    ["Insert Attribute" sgml-attrib-menu	t]
-    ["Insert Entity"	sgml-entities-menu	t]
-    ))
 
 (easy-menu-define
  sgml-markup-menu sgml-mode-map "Markup menu"
- sgml-markup-root-menu)
+ '("Markup"
+   ["Insert Element"	sgml-element-menu	t]
+   ["Insert Start-Tag" sgml-start-tag-menu	t]
+   ["Insert End-Tag"	sgml-end-tag-menu	t]
+   ["End Current Element"	sgml-insert-end-tag t]
+   ["Tag Region"	sgml-tag-region-menu	t]
+   ["Insert Attribute"  sgml-attrib-menu	t]
+   ["Insert Entity"	sgml-entities-menu	t]
+   ["Add Element to Element"	sgml-add-element-menu	t]
+   ("Custom markup"   "---")
+   ))
 
 (easy-menu-define
  sgml-move-menu sgml-mode-map "Menu of move commands"
@@ -873,43 +913,108 @@ as that may change."
  sgml-main-menu sgml-mode-map "Main menu"
  '("SGML"
    ["Reset Buffer"	normal-mode t]
-   ["End Element"	sgml-insert-end-tag t]
    ["Show Context"	sgml-show-context t]
    ["What Element"	sgml-what-element t]
    ["List Valid Tags"	sgml-list-valid-tags t]
    ["Show/Hide Warning Log"  sgml-show-or-clear-log t]
    ["Validate"		sgml-validate t]
-   ["File Options >"	sgml-file-options-menu t]
-   ["User Options >"	sgml-user-options-menu t]
-   ["Save File Options"  sgml-save-options t]
+   ("File Options"   "---")
+   ("User Options"   "---")
    ["Submit Bug Report"  sgml-submit-bug-report t]
-   )
- )
+   ))
 
+
+(defun sgml-options-menu-items (vars)
+  (mapcar (lambda (var)
+            (let ((desc (format "%s [%s]"
+                                (sgml-variable-description var)
+                                (sgml-option-value-indicator var)))
+                  (type (sgml-variable-type var)))
+              (cond ((consp type)
+                     (cons desc
+                           (mapcar (lambda (c)
+                                     (vector
+                                      (if (consp c) (car c) (format "%s" c))
+                                      `(setq ,var ',(if (consp c) (cdr c) c))
+                                      t))
+                                   type)))
+                    (t
+                     (vector desc `(sgml-do-set-option ',var) t)))))
+	  vars))
+
+(defun sgml-option-value-indicator (var)
+  (let ((type (sgml-variable-type var))
+	(val (symbol-value var)))
+    (cond
+     ((eq type 'toggle)
+      (if val "Yes" "No"))
+     ((eq type 'string)
+      (if (stringp val)
+	  (substring val 0 (min (length val) 4))
+	"-"))
+     ((and (atom type) val)
+      "...")
+     ((consp type)
+      (or (car (rassq val type))
+	  val))
+     (t
+      "-"))))
+
+(defvar sgml-last-options-menu-values ())
+
+(defun sgml-any-option-changed (oldvalues vars)
+  (not (loop for val in oldvalues
+             for var in vars
+             always (eq val (symbol-value var)))))
+
+(defun sgml-update-options-menu (menuname option-vars &optional save-func)
+  (let ((last-values (assoc menuname sgml-last-options-menu-values)))
+    (when (or (null last-values)
+              (sgml-any-option-changed (cdr last-values)
+                                       option-vars))
+      (easy-menu-change '("SGML") menuname
+                      (nconc (sgml-options-menu-items option-vars)
+                             (if save-func
+                                 (list "---"
+                                       (vector (format "Save %s" menuname)
+                                               save-func t)))))
+      (unless last-values
+        (setq last-values (cons menuname nil))
+        (push last-values sgml-last-options-menu-values))
+      (setf (cdr last-values) (mapcar (function symbol-value) option-vars)))))
+
+
+(defun sgml-update-all-options-menus ()
+  (sgml-update-options-menu "File Options" sgml-file-options
+			    'sgml-save-options)
+  (sgml-update-options-menu "User Options" sgml-user-options)
+  nil)
+
+(defun sgml-compute-insert-dtd-items ()
+  (loop for e in sgml-custom-dtd collect
+        (vector (first e)
+                (` (sgml-doctype-insert (, (cadr e)) '(, (cddr e))))
+                t)))
+
+(defun sgml-compute-custom-markup-items ()
+  (loop for e in sgml-custom-markup collect
+        (vector (first e)
+                (` (sgml-insert-markup  (, (cadr e))))
+                t)))
 
 (defun sgml-build-custom-menus ()
   "Build custom parts of Markup and DTD menus."
   (let ((button3 (lookup-key (current-local-map) [button3])))
-    (easy-menu-define
-     sgml-markup-menu sgml-mode-map "Markup menu"
-     (append sgml-markup-root-menu
-	     (list "----")
-	     (loop for e in sgml-custom-markup collect
-		   (vector (first e)
-			   (` (sgml-insert-markup  (, (cadr e))))
-			   t))))
-    (easy-menu-define
-     sgml-dtd-menu sgml-mode-map "DTD menu"
-     (append sgml-dtd-root-menu
-	     (list "----")
-	     (loop for e in sgml-custom-dtd collect
-		   (vector (first e)
-			   (` (sgml-doctype-insert (, (cadr e))
-						   '(, (cddr e))))
-			   t))))    
     (unless (or (null button3)
 		(numberp button3))
-      (local-set-key [button3] button3))))
+      (local-set-key [button3] button3))
+    (when sgml-custom-dtd
+      (easy-menu-change '("DTD") "Insert DTD"
+			(sgml-compute-insert-dtd-items)))
+    (when sgml-custom-markup
+      (easy-menu-change '("Markup") "Custom markup"
+			(sgml-compute-custom-markup-items))))
+  nil)
 
 
 ;;;; Post command hook 
@@ -933,15 +1038,19 @@ actually only the state that persists between commands.")
 
 
 (defun sgml-command-post ()
-  (when (eq major-mode 'sgml-mode)
+  (when (or (memq major-mode '(sgml-mode xml-mode))
+	    (fboundp 'make-local-hook))
+    ;; Explanation if make-local-hook is defined then this is called
+    ;; from a local hook and need not check major-mode.
     (when (and (null sgml-buffer-parse-state)
 	       sgml-auto-activate-dtd
 	       (null sgml-auto-activate-dtd-tried)
 	       (not (zerop (buffer-size)))
 	       (looking-at ".*<"))
       (setq sgml-auto-activate-dtd-tried t)
-      (sgml-need-dtd)
-      (sgml-fontify-buffer 0))
+      (ignore-errors
+        (sgml-need-dtd)
+        (sgml-fontify-buffer 0)))
     (when sgml-buffer-parse-state
       (sgml-update-display))))
 
@@ -992,6 +1101,7 @@ User options:
 
 sgml-omittag  Set this to reflect OMITTAG in the SGML declaration.
 sgml-shortag  Set this to reflect SHORTTAG in the SGML declaration.
+sgml-namecase-general  Set this to reflect NAMECASE GENERAL in the SGML declaration.
 sgml-auto-insert-required-elements  If non-nil, automatically insert required 
 	elements in the content of an inserted element.
 sgml-balanced-tag-edit  If non-nil, always insert start-end tag pairs.
@@ -1022,6 +1132,7 @@ All bindings:
 "
   (interactive)
   (kill-all-local-variables)
+  (setq sgml-xml-p nil)
   (setq local-abbrev-table sgml-mode-abbrev-table)
   (use-local-map sgml-mode-map)
   (setq mode-name "SGML")
@@ -1033,7 +1144,7 @@ All bindings:
 
   (set (make-local-variable 'paragraph-separate)
 	"^[ \t\n]*$\\|\
-^[ \t]*</?\\([A-Za-z]\\([-.A-Za-z0-9= \t\n]\\|\
+^[ \t]*</?\\([_A-Za-z]\\([-:._A-Za-z0-9= \t\n]\\|\
 \"[^\"]*\"\\|'[^']*'\\)*\\)?>$")
   (set (make-local-variable 'paragraph-start)
        paragraph-separate)
@@ -1062,15 +1173,45 @@ All bindings:
   (when (setq sgml-default-dtd-file (sgml-default-dtd-file))
     (unless (file-exists-p sgml-default-dtd-file)
       (setq sgml-default-dtd-file nil)))
-  (add-hook 'post-command-hook 'sgml-command-post 'append)
+  (cond ((fboundp 'make-local-hook)
+	 ;; emacs>= 19.29
+	 (make-local-hook 'post-command-hook)
+	 (add-hook 'post-command-hook 'sgml-command-post 'append 'local)
+	 (unless sgml-running-lucid 
+	   ;; XEmacs 20.4 doesn't handle local activate-menubar-hook
+	   ;; it tries to call the function `t' when using the menubar
+	   (make-local-hook 'activate-menubar-hook))
+         (add-hook 'activate-menubar-hook 'sgml-update-all-options-menus
+		   nil 'local))
+	(t
+	 ;; emacs< 19.29
+	 (add-hook 'post-command-hook 'sgml-command-post 'append)
+         (add-hook 'menu-bar-update-hook 'sgml-update-all-options-menus)
+         ))
   (run-hooks 'text-mode-hook 'sgml-mode-hook)
-  (sgml-build-custom-menus)
   (easy-menu-add sgml-main-menu)
   (easy-menu-add sgml-modify-menu)
   (easy-menu-add sgml-move-menu)
   (easy-menu-add sgml-markup-menu)
   (easy-menu-add sgml-view-menu)
-  (easy-menu-add sgml-dtd-menu))
+  (easy-menu-add sgml-dtd-menu)
+  (sgml-build-custom-menus))
+
+
+
+;;;###autoload
+(define-derived-mode xml-mode sgml-mode "XML"
+  (setq sgml-xml-p t)
+  ;; XML-friendly settings
+  (setq sgml-omittag nil)
+  (setq sgml-shorttag nil)
+  (setq sgml-namecase-general nil)
+  (setq sgml-minimize-attributes nil)
+  (setq sgml-always-quote-attributes t)
+  (setq sgml-validate-command "nsgmls -wxml -s %s %s")
+  (unless sgml-declaration
+    (make-local-variable 'sgml-declaration)
+    (setq sgml-declaration sgml-xml-declaration)))
 
 (defun sgml-default-dtd-file ()
   (and (buffer-file-name)
@@ -1092,7 +1233,7 @@ All bindings:
     0))
 
 (defconst sgml-start-tag-regex
-  "<[A-Za-z]\\([-.A-Za-z0-9= \n\t]\\|\"[^\"]*\"\\|'[^']*'\\)*"
+  "<[_A-Za-z]\\([-:.A-Za-z0-9= \n\t]\\|\"[^\"]*\"\\|'[^']*'\\)*"
   "Regular expression that matches a non-empty start tag.
 Any terminating > or / is not matched.")
 
@@ -1160,7 +1301,7 @@ Any terminating > or / is not matched.")
 		    ;; nor an unclosed start-tag.
 		    (looking-at (concat sgml-start-tag-regex "[/<]"))
 		    ;; Nor an unclosed end-tag.
-		    (looking-at "</[A-Za-z][-.A-Za-z0-9]*[ \t]*<"))
+		    (looking-at "</[A-Za-z][-:.A-Za-z0-9]*[ \t]*<"))
 		   (setq blinkpos nil)))
 	    (if blinkpos
 		()
@@ -1393,6 +1534,9 @@ declaration names.
 If it is something else complete with ispell-complete-word." t)
 (autoload 'sgml-file-options-menu "psgml-edit" nil t)
 (autoload 'sgml-user-options-menu "psgml-edit" nil t)
+(autoload 'sgml-add-element-to-element "psgml-edit" "Add an element of type GI to the current element.
+The element will be added at the last legal position if FIRST is `nil',
+otherwise it will be added at the first legal position." t)
 (autoload 'sgml-save-dtd "psgml-dtd" "Save the parsed dtd on FILE." t)
 (autoload 'sgml-list-elements "psgml-info" "List the elements and their attributes in the current DTD." t)
 (autoload 'sgml-list-attributes "psgml-info" "List the attributes and in which elements they occur." t)
