@@ -1,6 +1,6 @@
 ;;;; psgml-info.el
-;;; Last edited: 1998-11-25 21:34:05 lenst
-;;; $Id: psgml-info.el,v 2.8 1998/12/06 20:56:18 lenst Exp $
+;;; Last edited: 2000-11-09 19:23:50 lenst
+;;; $Id: psgml-info.el,v 2.12 2001/02/08 19:09:25 lenst Exp $
 
 ;; Copyright (C) 1994, 1995 Lennart Staflin
 
@@ -20,7 +20,6 @@
 ;; along with this program; if not, write to the Free Software
 ;; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-Next page...
 
 ;;;; Commentary:
 
@@ -47,6 +46,7 @@ Next page...
 
 ;;;; Code:
 
+(provide 'psgml-info)
 (require 'psgml)
 (require 'psgml-parse)
 
@@ -102,9 +102,9 @@ Next page...
 	   (loop for dfa in (sgml-and-node-dfas (car agenda)) do
 		 (sgml-add-last-unique dfa states))))
 	 (setq agenda (cdr agenda)))
-       (setq res (sort (set-difference
-			(union res (sgml-eltype-includes eltype))
-			(sgml-eltype-excludes eltype))
+       (setq res (sort (copy-seq (set-difference
+                                  (union res (sgml-eltype-includes eltype))
+                                  (sgml-eltype-excludes eltype)))
 		       (function string-lessp)))
        (setf (sgml-eltype-appdata eltype 're-cache) res)
        res)))))
@@ -293,16 +293,19 @@ Next page...
 
 ;;;; Describe element type
 
-(defun sgml-princ-names (names)
+(defun sgml-princ-names (names &optional first sep)
+  (setq sep (or sep " "))
   (loop with col = 0
 	for name in names
+        for this-sep = (if first (prog1 first (setq first nil)) sep)
 	do
-	(when (and (> col 0) (> (+ col (length name) 1) fill-column))
-	  (princ "\n")
-	  (setq col 0))
-	(princ " ") (princ name)
-	(incf col (length name))
-	(incf col 1)))
+        (princ this-sep)
+	(incf col (length this-sep))
+	(when (and (> col 0) (> (+ col (length name)) fill-column))
+	  (princ "\n ")
+	  (setq col 1))
+        (princ name)
+	(incf col (length name))))
 
 (defun sgml-describe-element-type (et-name)
   "Describe the properties of an element type as declared in the current DTD."
@@ -367,10 +370,19 @@ Next page...
       (cond ((symbolp (sgml-eltype-model et)) (princ (sgml-eltype-model et)))
 	    (t
 	     (princ (if (sgml-eltype-mixed et) "mixed\n\n"
-		       "element\n\n"))	     
+                      "element\n\n"))	     
 	     (sgml-princ-names
 	      (mapcar #'symbol-name (sgml-eltype-refrenced-elements et)))))
-
+      (let ((incl (sgml-eltype-includes et))
+            (excl (sgml-eltype-excludes et)))
+        (when (or incl excl)
+          (princ "\n\nEXCEPTIONS:"))
+        (when incl
+          (princ "\n + ")
+          (sgml-princ-names (mapcar #'symbol-name incl)))
+        (when excl
+          (princ "\n - ")
+          (sgml-princ-names (mapcar #'symbol-name excl))))
       ;; ----
       (princ "\n\nOCCURS IN:\n\n")
       (let ((occurs-in ()))
@@ -379,17 +391,8 @@ Next page...
 		     (when (memq et (sgml-eltype-refrenced-elements cand))
 		       (push cand occurs-in))))
 	 (sgml-pstate-dtd sgml-buffer-parse-state))
-
-	(loop with col = 0
-	      for occur-et in (sort occurs-in (function string-lessp))
-	      for name = (sgml-eltype-name occur-et)
-	      do
-	      (when (and (> col 0) (> (+ col (length name) 1) fill-column))
-		(princ "\n")
-		(setq col 0))
-	      (princ " ") (princ name)
-	      (incf col (length name))
-	      (incf col 1))))))
+        (sgml-princ-names (mapcar 'sgml-eltype-name
+                                  (sort occurs-in (function string-lessp))))))))
 
 
 ;;;; Print general info about the DTD.
@@ -402,8 +405,8 @@ Next page...
 	(entities 0)
 	(parameters 0)
 	(fmt "%20s %s\n")
-	(hdr "")
-	)
+	(hdr ""))
+
     (sgml-map-eltypes (function (lambda (e) (incf elements)))
 		      sgml-dtd-info)
     (sgml-map-entities (function (lambda (e) (incf entities)))

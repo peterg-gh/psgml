@@ -1,6 +1,6 @@
-;;;;\filename dump.el
-;;;\Last edited: 1999-08-09 23:38:43 lenst
-;;;\RCS $Id: psgml-debug.el,v 2.12 1999/08/12 06:23:11 lenst Exp $
+;;;;\filename psgml-debug.el
+;;;\Last edited: 2000-06-07 07:29:59 lenst
+;;;\RCS $Id: psgml-debug.el,v 2.20 2000/09/06 18:01:26 lenst Exp $
 ;;;\author {Lennart Staflin}
 ;;;\maketitle
 
@@ -116,6 +116,7 @@
 (eval-when (load)
   (unless sgml-running-lucid
     (def-edebug-spec sgml-with-parser-syntax (&rest form))
+    (def-edebug-spec sgml-with-parser-syntax-ro (&rest form))
     (def-edebug-spec sgml-skip-upto (sexp))
     (def-edebug-spec sgml-check-delim (sexp &optional sexp))
     (def-edebug-spec sgml-parse-delim (sexp &optional sexp))
@@ -262,8 +263,7 @@
 	    (progn
 	      (sgml-parse-prolog)
 	      ;;(sgml-next-trouble-spot)
-	      (sgml-parse-until-end-of nil)
-	      )
+	      (sgml-parse-until-end-of nil))
 	  (error
 	   (princ errcode)
 	   (terpri)))
@@ -282,12 +282,12 @@
 
 (defun profile-sgml (&optional file)
   (interactive)
-  (or file (setq file (expand-file-name "~/work/config/metaspec.xml")))
+  (or file (setq file (expand-file-name "~/work/sigmalink/BBB/config/configspec.xml")))
   (find-file file)
   (sgml-need-dtd)
   (sgml-instrument-parser)
   (elp-reset-all)
-  (dotimes (i 10)
+  (dotimes (i 5)
     (garbage-collect)
     (sgml-reparse-buffer (function sgml-handle-shortref)))
   (elp-results))
@@ -411,7 +411,8 @@
   (beginning-of-line)
   (let ((pos-pair (assoc (point) show-structure-positions)))
     (when pos-pair
-      (switch-to-buffer show-structure-source-buffer)
+      (select-window
+       (display-buffer show-structure-source-buffer))
       (goto-char (cdr pos-pair)))))
 
 
@@ -451,5 +452,252 @@
           (move-to-column fill-column)
           (delete-region (point) end)
           (throw 'show-data-stop nil))))))
+
+;;;; Show current element type
+;; Candidate for C-c C-t
+
+(autoload 'sgml-princ-names "psgml-info")
+
+(define-key sgml-mode-map "\C-c\C-t" 'sgml-show-current-element-type)
+
+(defun sgml-show-current-element-type ()
+  (interactive)
+  (let* ((el (sgml-find-context-of (point)))
+         (et (sgml-element-eltype el)))
+    (with-output-to-temp-buffer "*Current Element Type*"
+      (princ (format "ELEMENT: %s%s\n" (sgml-eltype-name et)
+                     (let ((help-text (sgml-eltype-appdata et 'help-text)))
+                       (if help-text
+                           (format " -- %s" help-text)
+                           ""))))
+      (when sgml-omittag
+        (princ (format "\n Start-tag is %s.\n End-tag is %s.\n"
+                       (if (sgml-eltype-stag-optional et)
+                           "optional" "required")
+                       (if (sgml-eltype-etag-optional et)
+                           "optional" "required"))))
+      ;; ----
+      (princ "\nCONTENT: ")
+      (cond ((symbolp (sgml-eltype-model et)) (princ (sgml-eltype-model et)))
+	    (t
+	     (princ (if (sgml-eltype-mixed et)
+                        "mixed\n"
+                      "element\n"))	     
+             (sgml-print-position-in-model el et (point) sgml-current-state)
+             (princ "\n\n")
+	     (sgml-princ-names
+	      (mapcar #'symbol-name (sgml-eltype-refrenced-elements et))
+              "All: ")))
+      (let ((incl (sgml-eltype-includes et))
+            (excl (sgml-eltype-excludes et)))
+        (when (or incl excl)
+          (princ "\n\nEXCEPTIONS:"))
+        (when incl
+          (princ "\n + ")
+          (sgml-princ-names (mapcar #'symbol-name incl)))
+        (when excl
+          (princ "\n - ")
+          (sgml-princ-names (mapcar #'symbol-name excl))))
+      ;; ----
+      (princ "\n\nATTRIBUTES:\n")
+      (sgml-print-attlist et)
+      ;; ----
+      (let ((s (sgml-eltype-shortmap et)))
+	(when s
+	  (princ (format "\nUSEMAP: %s\n" s))))
+      ;; ----
+      (princ "\nOCCURS IN:\n")
+      (let ((occurs-in ()))
+	(sgml-map-eltypes
+	 (function (lambda (cand)
+		     (when (memq et (sgml-eltype-refrenced-elements cand))
+		       (push cand occurs-in))))
+	 (sgml-pstate-dtd sgml-buffer-parse-state))
+        (sgml-princ-names (mapcar 'sgml-eltype-name
+                                  (sort occurs-in (function string-lessp))))))))
+
+(defun sgml-print-attlist (et)
+  (let ((ob (current-buffer)))
+    (set-buffer standard-output)
+    (unwind-protect
+        (loop
+         for attdecl in (sgml-eltype-attlist et) do
+         (princ " ")
+         (princ (sgml-attdecl-name attdecl))
+         (let ((dval (sgml-attdecl-declared-value attdecl))
+               (defl (sgml-attdecl-default-value attdecl)))
+           (when (listp dval)
+             (setq dval (concat (if (eq (first dval)
+                                        'NOTATION)
+                                    "#NOTATION (" "(")
+                                (mapconcat (function identity)
+                                           (second dval)
+                                           "|")
+                                ")")))
+           (indent-to 15 1)
+           (princ dval)
+           (cond ((sgml-default-value-type-p 'FIXED defl)
+                  (setq defl (format "#FIXED '%s'"
+                                     (sgml-default-value-attval defl))))
+                 ((symbolp defl)
+                  (setq defl (upcase (format "#%s" defl))))
+                 (t
+                  (setq defl (format "'%s'"
+                                     (sgml-default-value-attval defl)))))
+
+           (indent-to 48 1)          
+           (princ defl)
+           (terpri)))
+      (set-buffer ob))))
+
+
+(defun sgml-print-position-in-model (element element-type buffer-pos parse-state)
+  (let ((u (sgml-element-content element))
+        (names nil))
+    (while (and u (>= buffer-pos (sgml-element-end u)))
+      (push (sgml-element-gi u) names)
+      (setq u (sgml-element-next u)))
+    (when names
+      (sgml-princ-names (nreverse names) " " ", ")
+      (princ "\n")))
+  (princ " ->")
+  (let* ((state parse-state)
+         (required-seq                  ; the seq of req el following point
+          (loop for required = (sgml-required-tokens state)
+                while (and required (null (cdr required)))
+                collect (sgml-eltype-name (car required))
+                do (setq state (sgml-get-move state (car required)))))
+         (last-alt
+          (mapcar 'sgml-eltype-name
+                  (append (sgml-optional-tokens state)
+                          (sgml-required-tokens state)))))
+    (cond
+     (required-seq
+      (when last-alt
+        (nconc required-seq
+               (list (concat "("
+                             (mapconcat (lambda (x) x)
+                                        last-alt " | ")
+                             (if (sgml-final state)
+                                 ")?" ")")))))
+      (sgml-princ-names required-seq " " ", "))
+
+     (last-alt
+      (sgml-princ-names last-alt " (" " | ")
+      (princ ")")
+      (when (sgml-final state)
+        (princ "?"))))))
+
+;;;; Adding appdata to element types
+;;; Candidate for PI PSGML processing
+
+(defvar sgml-psgml-pi-enable-outside-dtd nil)
+
+(defun sgml-eval-psgml-pi ()
+  (interactive)
+  (let ((sgml-psgml-pi-enable-outside-dtd t))
+    (sgml-parse-to-here)))
+
+(define-key sgml-mode-map "\e\C-x" 'sgml-eval-psgml-pi)
+
+(defun sgml--pi-element-handler ()
+  (sgml-skip-ps)
+  (let ((eltype (sgml-lookup-eltype (sgml-parse-name)))
+        name value)
+    (sgml-skip-ps)
+    (while (setq name (sgml-parse-name))
+      ;; FIXME: check name not reserved
+      (sgml-skip-ps)
+      (cond ((sgml-parse-delim "VI")
+             (sgml-skip-ps)
+             (setq value
+                   (if (looking-at "['\"]")
+                       (sgml-parse-literal)
+                     (read (current-buffer)))))
+            (t
+             (setq value t)))
+      (message "%s = %S" name value)
+      (setf (sgml-eltype-appdata eltype (intern (downcase name))) value)
+      (sgml-skip-ps))))
+
+
+(defun sgml-do-processing-instruction (in-declaration)
+  (let ((start (point)))
+    (when (and (or in-declaration
+                   sgml-psgml-pi-enable-outside-dtd)
+               (eq ?P (following-char))
+	       (looking-at "PSGML +\\(\\sw+\\) *"))
+      (let* ((command (format "%s" (downcase (match-string 1))))
+             (flag-command (assoc command
+                                  '(("nofill"      . nofill)
+                                    ("breakafter"  . break-after-stag)
+                                    ("breakbefore" . break-before-stag)
+                                    ("structure"   . structure)))))
+	(goto-char (match-end 0))
+	(cond (flag-command
+               (sgml-parse-set-appflag (cdr flag-command)))
+              ((equal command "element")
+               (sgml--pi-element-handler))
+              (t
+               (sgml-log-warning "Unknown processing instruction for PSGML: %s"
+                                 command)))))
+    (if sgml-xml-p
+	(sgml-skip-upto "XML-PIC")
+      (sgml-skip-upto "PIC"))
+    (when sgml-pi-function
+      (funcall sgml-pi-function
+	       (buffer-substring-no-properties start (point)))))
+  (if sgml-xml-p
+      (sgml-check-delim "XML-PIC")
+    (sgml-check-delim "PIC"))
+  (unless in-declaration
+    (sgml-set-markup-type 'pi))
+  t)
+
+;;;; Possible modification to allow setting face on content:
+(defun sgml-set-face-for (start end type)
+  (let ((face (cdr (assq type sgml-markup-faces))))
+    ;;++
+    (if (and (null type) sgml-current-tree) 
+        (setq face (sgml-element-appdata sgml-current-tree 'face)))
+    ;;--
+    (cond
+     (sgml-use-text-properties
+      (let ((inhibit-read-only t)
+	    (after-change-function nil)	; obsolete variable
+	    (before-change-function nil) ; obsolete variable
+	    (after-change-functions nil)
+	    (before-change-functions nil))
+	(put-text-property start end 'face face)
+        (when (< start end)
+          (put-text-property (1- end) end 'rear-nonsticky '(face)))))
+     (t
+      (let ((current (overlays-at start))
+	    (pos start)
+	    old-overlay)
+	(while current
+	  (cond ((and (null old-overlay)
+                      type
+		      (eq type (overlay-get (car current) 'sgml-type)))
+		 (setq old-overlay (car current)))
+		((overlay-get (car current) 'sgml-type)
+		 ;;(message "delov: %s" (overlay-get (car current) 'sgml-type))
+		 (delete-overlay (car current))))
+	  (setq current (cdr current)))
+	(while (< (setq pos (next-overlay-change pos))
+		  end)
+	  (setq current (overlays-at pos))
+	  (while current
+	    (when (overlay-get (car current) 'sgml-type)
+	      (delete-overlay (car current)))
+	    (setq current (cdr current))))
+	(cond (old-overlay
+	       (move-overlay old-overlay start end)
+	       (if (null (overlay-get old-overlay 'face))
+		   (overlay-put old-overlay 'face face)))
+	      (face
+	       (setq old-overlay (make-overlay start end))
+	       (overlay-put old-overlay 'sgml-type type)
+	       (overlay-put old-overlay 'face face))))))))
 
 ;¤¤\end{codeseg}

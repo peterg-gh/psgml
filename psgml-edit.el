@@ -1,6 +1,6 @@
 ;;; psgml-edit.el --- Editing commands for SGML-mode with parsing support
 ;;
-;; $Id: psgml-edit.el,v 2.46 1999/10/06 16:23:33 lenst Exp $
+;; $Id: psgml-edit.el,v 2.60 2000/10/22 18:44:52 lenst Exp $
 
 ;; Copyright (C) 1994, 1995, 1996 Lennart Staflin
 
@@ -49,7 +49,8 @@
 This either uses the save value in `sgml-last-element' or parses the buffer
 to find current open element."
   (setq sgml-markup-type nil)
-  (if (and (memq last-command sgml-users-of-last-element)
+  (if (and (not sgml-xml-p)
+           (memq last-command sgml-users-of-last-element)
 	   sgml-last-element)		; Don't return nil
       sgml-last-element
     (setq sgml-last-element (sgml-find-context-of (point))))  )
@@ -171,15 +172,15 @@ possible."
   (let* ((element (sgml-find-element-of (point)))
 	 (attspec (sgml-element-attribute-specification-list element))
 	 (oldattlist (sgml-element-attlist element)))
+    (goto-char (sgml-element-end element))
     (unless  (sgml-element-empty element)
-      (goto-char (sgml-element-end element))
-      (delete-char (- (sgml-element-etag-len element)))
-      (insert (sgml-end-tag-of gi)))
+      (delete-char (- (sgml-element-etag-len element))))
+    (insert (sgml-end-tag-of gi))
     (goto-char (sgml-element-start element))
     (delete-char (sgml-element-stag-len element))
     (insert (sgml-delim "STAGO")
             (sgml-general-insert-case gi))
-    (let* ((newel (sgml-find-element-of (point)))
+    (let* ((newel (sgml-find-context-of (point)))
 	   (newattlist (sgml-element-attlist newel))
 	   (newasl (sgml-translate-attribute-specification-list
 		    attspec oldattlist newattlist)))
@@ -347,46 +348,77 @@ This uses the selective display feature."
 
 ;;;; SGML mode: indentation and movement
 
+(defvar sgml-content-indent-function 'sgml-indent-according-to-level)
+(defvar sgml-attribute-indent-function 'sgml-indent-according-to-stag)
+
+(defun sgml-indent-according-to-level (element)
+  (* sgml-indent-step
+     (sgml-element-level element)))
+
+(defun sgml-indent-according-to-stag (element)
+  (save-excursion
+    (goto-char (sgml-element-start element))
+    (+ (current-column) sgml-indent-step)))
+
+(defun sgml-indent-according-to-stag-end (element)
+  (save-excursion
+    (goto-char (sgml-element-start element))
+    (+ 
+     (current-column)
+     (length (sgml-element-gi element))
+     2)))
+
+
+;;(setq sgml-content-indent-function 'sgml-indent-according-to-stag)
+
 (defun sgml-indent-line (&optional col element)
   "Indent line, calling parser to determine level unless COL or ELEMENT
 is given.  If COL is given it should be the column to indent to.  If
 ELEMENT is given it should be a parse tree node, from which the level
-is determined."
+is determined.
+Deprecated: ELEMENT"
+  (sgml-debug "-> sgml-indent-line %s %s"
+              col (if element (sgml-element-gi element)))
   (when sgml-indent-step
-    (let ((here (point-marker)))
+    (let ((here (point-marker))
+          ;; Where the indentation goes, i.e., will this be data
+          element-insert                
+          ;; Where we compute indentation, where the thing we indent is.
+          ;; Can be different from above if end-tag is omitted.
+          element-level)
       (back-to-indentation)
-      (unless (or col element)
+      (unless col
 	;; Determine element
-	(setq element
+	(setq element-insert
 	      (let ((sgml-throw-on-error 'parse-error))
 		(catch sgml-throw-on-error
-		  (if (eobp)
-		      (sgml-find-context-of (point))
-		    (sgml-find-element-of (point)))))))
-      (when (eq element sgml-top-tree)	; not in a element at all
-	(setq element nil)		; forget element
+                  ;; This used to be (sgml-find-element-of (point))
+                  ;; Why? Possibly to handle omitted end-tags
+                  (sgml-debug "-- sgml-indent-line find context")
+                  (sgml-find-context-of (point)))))
+        (setq element-level element-insert)
+        (when (and (not (eobp)) element-level)
+          (setq element-level (sgml-find-element-of (point)))
+          ;; It would be good if sgml-find-element-of would also tell
+          ;; us if the character is in the start-tag/end-tag or
+          ;; content
+          (when (or (= (point) (sgml-element-start element-level))
+                    (sgml-with-parser-syntax (sgml-is-end-tag)))
+            (setq element-level (sgml-element-parent element-level)))))
+      (when (eq element-level sgml-top-tree) ; not in a element at all
+	(setq element-level nil)        ; forget element
 	(goto-char here))		; insert normal tab insted)
-      (when element
-	(sgml-with-parser-syntax
-	 (let ((stag (sgml-is-start-tag))
-	       (etag (sgml-is-end-tag)))
-           (cond ((and (> (point) (sgml-element-start element))
-                       (< (point) (sgml-element-stag-end element)))
-                  (setq col
-                        (+ (save-excursion
-                             (goto-char (sgml-element-start element))
-                             (current-column))
-                           (length (sgml-element-gi element))
-                           2)))
-                 ((or sgml-indent-data
-                      (not (sgml-element-data-p
-                            (if stag
-                                (sgml-element-parent element)
-                              element))))
-                  (setq col
-                        (* sgml-indent-step
-                           (+ (if (or stag etag) -1 0)
-                              (sgml-element-level element)))))))))
+      (when element-level
+        (cond ((and (> (point) (sgml-element-start element-insert))
+                    (< (point) (sgml-element-stag-end element-insert))
+                    (not (sgml-element-data-p
+                          (sgml-element-parent element-insert))))
+               (setq col
+                     (funcall sgml-attribute-indent-function element-insert)))
+              ((or sgml-indent-data
+                   (not (sgml-element-data-p element-insert)))
+               (setq col
+                     (funcall sgml-content-indent-function element-level)))))
       (when (and col (/= col (current-column)))
 	(beginning-of-line 1)    
 	(delete-horizontal-space)
@@ -603,12 +635,7 @@ is determined."
 
 
 (defun sgml-insert-tag (tag &optional silent no-nl-after)
-  "Insert a tag, reading tag name in minibuffer with completion.
-If the variable sgml-balanced-tag-edit is t, also inserts the
-corresponding end tag. If sgml-leave-point-after-insert is t, the point
-is left after the inserted tag(s), unless the element has som required
-content.  If sgml-leave-point-after-insert is nil the point is left
-after the first tag inserted."
+  "Insert a tag, reading tag name in minibuffer with completion."
   (interactive 
    (list
     (let ((completion-ignore-case sgml-namecase-general))
@@ -636,7 +663,11 @@ after the first tag inserted."
   (function sgml-default-asl))
 
 (defun sgml-insert-element (name &optional after silent)
-  "Reads element name from minibuffer and inserts start and end tags."
+  "Reads element name from minibuffer and inserts start and end tags.
+If sgml-leave-point-after-insert is t, the point
+is left after the inserted tag(s), unless the element has som required
+content.  If sgml-leave-point-after-insert is nil the point is left
+after the first tag inserted."
   (interactive (list (sgml-read-element-name "Element: ")
 		     sgml-leave-point-after-insert))
   (let (newpos				; position to leave cursor at
@@ -653,6 +684,8 @@ after the first tag inserted."
       (sgml-insert-attributes (funcall sgml-new-attribute-list-function
 				       element)
 			      (sgml-element-attlist element))
+      ;; Get element with new attributes
+      (setq element (sgml-find-context-of (point)))
       (if (and sgml-xml-p (sgml-check-empty name))
 	  (forward-char 2)
 	(forward-char 1))
@@ -671,7 +704,7 @@ after the first tag inserted."
 	      (insert "\n")
 	      (when sgml-insert-missing-element-comment
 		(insert (format "<!-- one of %s -->" tem))
-		(sgml-indent-line nil element)))))
+		(sgml-indent-line)))))
 	(setq newpos (or newpos (point)))
 	(when sgml-insert-end-tag-on-new-line
 	  (insert "\n"))
@@ -688,7 +721,7 @@ after the first tag inserted."
 	collect
 	(sgml-make-attspec
 	 (sgml-attdecl-name attdecl)
-	 (sgml-read-attribute-value attdecl nil))))
+	 (sgml-read-attribute-value attdecl (sgml-element-name element) nil))))
 
 (defun sgml-tag-region (element start end)
   "Reads element name from minibuffer and inserts start and end tags."
@@ -719,7 +752,8 @@ AVL should be a assoc list mapping symbols to strings."
 	    ;; Supply the default value if a value is needed
 	    (cond ((sgml-default-value-type-p 'REQUIRED def)
 		   (setq val ""))
-		  ((and (not (or sgml-omittag sgml-shorttag))
+		  ((and (or (not (or sgml-xml-p sgml-omittag sgml-shorttag))
+                            sgml-insert-defaulted-attributes)
 			(consp def))
 		   (setq val (sgml-default-value-attval def)))))
           (when val
@@ -823,7 +857,7 @@ AVL should be a assoc list mapping symbols to strings."
                                (sgml-element-empty element)
                              (eq t (sgml-element-net-enabled element))))))
 
-(defun sgml-read-attribute-value (attdecl curvalue)
+(defun sgml-read-attribute-value (attdecl element curvalue)
   "Return the attribute value read from user.
 ATTDECL is the attribute declaration for the attribute to read.
 CURVALUE is nil or a string that will be used as default value."
@@ -836,8 +870,8 @@ CURVALUE is nil or a string that will be used as default value."
 		     (notations "NOTATION")
 		     (t (symbol-name dv))))
 	 (prompt
-	  (format "Value for %s (%s%s): "
-		  name type
+	  (format "Value for %s in %s (%s%s): "
+		  name element type 
 		  (if curvalue
 		      (format " Default: %s" curvalue)
 		    "")))
@@ -873,6 +907,7 @@ CURVALUE is nil or a string that will be used as default value."
      (list name
 	   (sgml-read-attribute-value
 	    (sgml-lookup-attdecl name (sgml-element-attlist el))
+			(sgml-element-name el)
 	    (sgml-element-attval el name)))))
   ;; Body
   (assert (stringp name))
@@ -954,7 +989,7 @@ after the first tag inserted."
      (t
       (let ((what
 	     (sgml-menu-ask event (if (or end sgml-balanced-tag-edit)
-				  'element 'tags))))
+                                      'element 'tags))))
 	(cond
 	 ((null what))
 	 (end
@@ -1067,7 +1102,9 @@ buffers local variables list."
 	   (setq vars (cdr vars)))
 	  ((car vars)			; Avoid nil
 	   (sgml-set-local-variable (car vars) (cadr vars))
-	   (setq vars (cddr vars)))))
+	   (setq vars (cddr vars)))
+          (t
+  	   (setq vars (cddr vars)))))
   (setq sgml-top-tree nil))
 
 (defun sgml-attrib-menu (event)
@@ -1102,6 +1139,7 @@ buffers local variables list."
 			   (sgml-attdecl-name attdecl) 
 			   (list 'sgml-read-attribute-value
 				 (list 'quote attdecl)
+				 (list 'quote (sgml-element-name el))
 				 (sgml-element-attval el name))))))
 	    (if (sgml-default-value-type-p 'REQUIRED defval)
 		nil
@@ -1110,8 +1148,8 @@ buffers local variables list."
 			      (format "Default: %s"
 				      (sgml-default-value-attval defval))
 			    "#IMPLIED")
-			  (list 'sgml-insert-attribute name nil))))))))
-  )
+			  (list 'sgml-insert-attribute name nil)))))))))
+
 
 ;;;; SGML mode: Fill 
 
@@ -1163,6 +1201,8 @@ subelements."
 	  (setq c (sgml-element-next c)))
 	;; Fill the last region in content of element,
 	;; but get a fresh parse tree, if it has change due to other fills.
+        (goto-char last-pos)
+        (when (bolp) (sgml-indent-line))
 	(sgml-fill-region last-pos
 			  (sgml-element-etag-start
 			   (sgml-find-element-of
@@ -1174,7 +1214,11 @@ subelements."
       ;; If element is not mixed, fill subelements recursively
       (let ((c (sgml-element-content element)))
 	(while c
+	  (goto-char (sgml-element-etag-start c))
+          (sgml-indent-line)
 	  (goto-char (sgml-element-start c))
+          (sgml-indent-line)
+          (setq c (sgml-find-element-of (point)))
 	  (sgml-do-fill c)
 	  (setq c (sgml-element-next (sgml-find-element-of (point))))))))))
 
@@ -1185,27 +1229,33 @@ subelements."
     (skip-chars-backward " \t\n")
     (while (progn (beginning-of-line 1)
 		  (< start (point)))
-      (delete-horizontal-space)
       (delete-char -1)
+      (delete-horizontal-space)
       (insert " "))
     (end-of-line 1)
-    (let (give-up prev-column opoint)
+    (let (give-up prev-column opoint oopoint)
       (while (and (not give-up) (> (current-column) fill-column))
 	(setq prev-column (current-column))
-	(setq opoint (point))
+	(setq oopoint (point))
 	(move-to-column (1+ fill-column))
 	(skip-chars-backward "^ \t\n")
-	(if (bolp)
-	    (re-search-forward "[ \t]" opoint t))
 	(setq opoint (point))
 	(skip-chars-backward " \t")
 	(if (bolp)
-	    (setq give-up t)
-	(delete-region (point) opoint)
-	(newline)
-	(sgml-indent-line)
-	(end-of-line 1)
-	(setq give-up (>= (current-column) prev-column)))))))
+            (progn
+              (goto-char opoint)
+              (if (re-search-forward "[ \t]" oopoint t)
+                  (save-excursion
+                    (skip-chars-forward " \t")
+                    (setq opoint (point)))
+                (setq give-up t))))
+        (if (not give-up)
+            (progn 
+              (delete-region (point) opoint)
+              (newline)
+              (sgml-indent-line)
+              (end-of-line 1)
+              (setq give-up (>= (current-column) prev-column))))))))
 
 ;;;; SGML mode: Attribute editing
 
@@ -1301,11 +1351,12 @@ Editing is done in a separate window."
 	   (sgml-insert '(category sgml-default rear-nonsticky (category)
                                    read-only sgml-default)
 			"#DEFAULT"))
-	  ((not (null cur-value))
+	  (t
            (sgml-insert '(read-only t category sgml-form
                                     rear-nonsticky (read-only category))
                         " ")
-	   (sgml-insert nil "%s" (sgml-attspec-attval cur-value))))
+           (when (not (null cur-value))
+             (sgml-insert nil "%s" (sgml-attspec-attval cur-value)))))
 	 (sgml-insert
 	  '(read-only 1)
 	  "\n\t-- %s: %s --\n"
@@ -1325,6 +1376,18 @@ Editing is done in a separate window."
 
 
 (defvar sgml-edit-attrib-mode-map (make-sparse-keymap))
+
+;; used as only for #DEFAULT in attribute editing. Binds all normally inserting
+;; keys to a command that will clear the #DEFAULT before doing self-insert.
+(defvar sgml-attr-default-keymap
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map sgml-edit-attrib-mode-map)
+    (substitute-key-definition 'self-insert-command
+                               'sgml-attr-clean-and-insert
+                               map
+                               global-map)
+    (put 'sgml-default 'local-map map)))
+
 (define-key sgml-edit-attrib-mode-map "\C-c\C-c" 'sgml-edit-attrib-finish)
 (define-key sgml-edit-attrib-mode-map "\C-c\C-d" 'sgml-edit-attrib-default)
 (define-key sgml-edit-attrib-mode-map "\C-c\C-k" 'sgml-edit-attrib-clear)
@@ -1430,6 +1493,13 @@ value.  To abort edit kill buffer (\\[kill-buffer]) and remove window
         (put-text-property (1- (point)) (point)
                            'rear-nonsticky '(read-only category)))
       (kill-region (point) end))))
+
+
+(defun sgml-attr-clean-and-insert (n)
+  "Insert the character you type, after clearing the current attribute."
+  (interactive "p")
+  (sgml-edit-attrib-clear)
+  (self-insert-command n))
 
 
 (defun sgml-edit-attrib-field-start ()
@@ -1772,6 +1842,8 @@ If it is something else complete with ispell-complete-word."
 	 nil)
         (ignore-case                    ; If ignore case in matching completion
          sgml-namecase-general)
+        (insert-case
+         'sgml-general-insert-case)
 	(pattern nil)
 	(c nil)
 	(here (point)))
@@ -1782,6 +1854,7 @@ If it is something else complete with ispell-complete-word."
      ;; entitiy
      ((eq c ?&)
       (sgml-need-dtd)
+      (setq insert-case 'sgml-entity-insert-case)
       (setq tab
 	    (sgml-entity-completion-table
 	     (sgml-dtd-entities (sgml-pstate-dtd sgml-buffer-parse-state)))))
@@ -1823,7 +1896,7 @@ If it is something else complete with ispell-complete-word."
 	       (message "[Complete]"))
 	      ((not (string= pattern completion))
 	       (delete-char (length pattern))
-	       (insert completion))
+	       (insert (funcall insert-case completion)))
 	      (t
 	       (goto-char here)
 	       (message "Making completion list...")

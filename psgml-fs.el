@@ -1,14 +1,14 @@
 ;;; psgml-fs.el --- Format a SGML-file according to a style file
-;; Copyright (C) 1995 Lennart Staflin
+;; Copyright (C) 1995, 2000 Lennart Staflin
 
 ;; Author: Lennart Staflin <lenst@lysator.liu.se>
-;; Version: $Id: psgml-fs.el,v 1.5 1999/08/25 16:21:40 lenst Exp $
+;; Version: $Id: psgml-fs.el,v 1.8 2000/10/11 14:41:22 lenst Exp $
 ;; Keywords: 
 ;; Last edited: 1999-08-02 20:55:20 lenst
 
 ;;; This program is free software; you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
-;;; the Free Software Foundation; either version 1, or (at your option)
+;;; the Free Software Foundation; either version 2, or (at your option)
 ;;; any later version.
 ;;;
 ;;; This program is distributed in the hope that it will be useful,
@@ -55,7 +55,7 @@
     (literal . nil)))
 
 (defvar fs-special-styles
-  '(top bottom before after hang-from text sub-style)
+  '(top bottom before after hang-from text sub-style title)
   "Style attribues that should not be entered in the characteristics table.")
 
 
@@ -86,6 +86,9 @@
 
 (defvar fs-vspace 0
   "Vertical space after last paragraph")
+
+(defvar fs-filename)
+(defvar fs-title)
 
 (defun fs-add-output (str &optional just)
   (save-excursion
@@ -159,7 +162,8 @@
   (sgml-pop-entity)
   (sit-for 0))
 
-(defun fs-element-content (e)
+(defun fs-element-content (&optional e)
+  (unless e (setq e (fs-element)))
   (let ((fs-para-acc "") fs-first-indent fs-left-indent)
     (sgml-map-content e
 		      (function fs-paraform-phrase)
@@ -195,6 +199,9 @@ The value can be the style-sheet list, or it can be a file name
 \(string) of a file containing the style sheet or it can be the name
 \(symbol) of a variable containing the style sheet." )
 
+(put 'fs-style 'variable-interactive
+     "fStyle file: ")
+
 (defvar fs-cached-styles nil)
 
 (defun fs-get-style (style)
@@ -216,14 +223,14 @@ The value can be the style-sheet list, or it can be a file name
 			(assq t fs-style)))))
 
 (defun fs-do-style (fs-current-element style)
-  (let ((hang-from (getf style 'hang-from)))
+  (let ((hang-from (eval (getf style 'hang-from))))
     (when hang-from
       (setq fs-hang-from 
 	    (format "%s%s "
 		    (make-string 
 		     (or (fs-char 'hang-left) (fs-char 'left))
 		     ? )
-		    (eval hang-from)))))
+                    hang-from))))
   (let ((fs-char (nconc
 		  (loop for st on style by 'cddr
 			unless (memq (car st) fs-special-styles)
@@ -250,6 +257,12 @@ The value can be the style-sheet list, or it can be a file name
                                (function fs-paraform-data)
                                nil
                                (function fs-paraform-entity)))))
+    (let ((title (getf style 'title)))
+      (when title
+        (setq title (eval title))
+        (save-excursion
+          (set-buffer fs-buffer)
+          (setq fs-title title))))
     (let ((after (getf style 'after)))
       (when after
 	(fs-do-style e after)))
@@ -269,8 +282,15 @@ The value can be the style-sheet list, or it can be a file name
   (let ((fs-style (fs-get-style fs-style))
         (fs-buffer (get-buffer-create "*Formatted*")))
     (save-excursion
-      (set-buffer fs-buffer)
-      (erase-buffer))
+      (let ((orig-filename (buffer-file-name (current-buffer))))
+        (set-buffer fs-buffer)
+        (erase-buffer)
+        (setq ps-left-header
+              '(fs-title fs-filename))
+        (make-local-variable 'fs-filename)
+        (setq fs-filename (file-name-nondirectory orig-filename))
+        (make-local-variable 'fs-title)
+        (setq fs-title "")))
     (display-buffer fs-buffer)
     (fs-engine (sgml-top-element))
     (fs-para)

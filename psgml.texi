@@ -7,7 +7,7 @@
 @syncodeindex vr cp
 @synindex ky cp
 @c %**end of header
-@c $Id: psgml.texi,v 1.1 1999/10/05 22:52:35 lenst Exp $
+@c $Id: psgml.texi,v 1.2 1999/11/09 15:54:41 lenst Exp $
 
 @ifinfo
 @format
@@ -216,11 +216,8 @@ variable, you can add a directory to this variable in your
 
 If you use the @code{configure} approach, compile psgml with @code{make}
 and the you can run @code{make install} to install it in the system
-library @file{site-lisp}.  The files are installed in a subdirectory
-named @file{psgml}.  The location of @file{site-lisp} is figured out by
-@code{configure}, but you can change it in the @file{Makefile}.  You
-need to make sure that this subdirectory is in Emacs @code{load-path}.
-
+library @file{site-lisp}.  The location of @file{site-lisp} is figured
+out by @code{configure}, but you can change it in the @file{Makefile}.
 
 Put the following line in your .emacs:
 

@@ -1,5 +1,5 @@
 ;;; psgml-api.el --- Extra API functions for PSGML
-;; $Id: psgml-api.el,v 1.4 1996/03/19 21:00:19 lenst Exp $
+;; $Id: psgml-api.el,v 1.6 2000/09/06 18:35:46 lenst Exp $
 
 ;; Copyright (C) 1994 Lennart Staflin
 
@@ -72,26 +72,25 @@ Also calling DATA-FUN, if non-nil, with data in content."
   (sgml-element-end element)		; Make sure all content is parsed
   (let ((main-buffer-max (point-max)))
     (save-excursion
-      (sgml-set-parse-state element 'start)
-      (when (eobp) (sgml-pop-entity))
-      (when (eolp) (forward-char 1))
-      (sgml-parse-data main-buffer-max data-fun pi-fun entity-fun)
-      (let ((c (sgml-tree-content element)))
-	(while c
-	  (sgml-pop-all-entities)
-	  (funcall element-fun c)
-	  (sgml-set-parse-state c 'after)
-	  (sgml-parse-data main-buffer-max data-fun pi-fun entity-fun)
-	  (setq c (sgml-tree-next c)))))
-    )
-  (sgml-pop-all-entities))
+      (sgml-with-parser-syntax-ro
+       (sgml-set-parse-state element 'start)
+       (when (eobp) (sgml-pop-entity))
+       (when (eolp) (forward-char 1))
+       (sgml-parse-data main-buffer-max data-fun pi-fun entity-fun)
+       (let ((c (sgml-tree-content element)))
+         (while c
+           (sgml-pop-all-entities)
+           (funcall element-fun c)
+           (sgml-set-parse-state c 'after)
+           (sgml-parse-data main-buffer-max data-fun pi-fun entity-fun)
+           (setq c (sgml-tree-next c))))))))
 
 (defun sgml-parse-data (sgml-goal sgml-data-function sgml-pi-function
 				  sgml-entity-function)
   (let ((sgml-throw-on-element-change 'el-done))
     (catch sgml-throw-on-element-change
-      (sgml-with-parser-syntax
-       (sgml-parser-loop nil)))))
+      (sgml-parse-continue sgml-goal nil t))))
+
 
 ;;;; Entity management
 

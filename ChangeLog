@@ -1,3 +1,197 @@
+Fri Feb  9 01:06:27 2001  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* Version 1.2.2 released
+
+	* psgml.el (sgml-mode-map): Bind (meta control h) instead of ESC
+	C-h, avoids redefining M-BS
+
+Thu Feb  8 20:08:47 2001  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-info.el: Add provide psgml-info
+
+Sun Oct 22 17:29:53 2000  Marc-Antoine Parent
+	
+	* patch from Marc-Antoine Parent
+	
+	* psgml-edit.el (sgml-read-attribute-value): include the element name, thus:
+	Value for {attribute name} in {element name} ({type} {Default}):
+
+
+2000-10-11  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml-edit.el (sgml-indent-line): new strategy for identifying
+	elements
+
+2000-09-06  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml-api.el (sgml-map-content): Use sgml-with-parser-syntax-ro
+
+	* psgml-parse.el (sgml-find-start-point): renamed to
+	sgml-goto-start-point, to indicate that this actually changes the
+	point and buffer. And should always be called inside
+	sgml-with-parser-syntax.
+	(sgml-with-parser-syntax-ro): As sgml-with-parser-syntax also
+	handle restoring buffer modification state.
+	(sgml-last-buffer): New state variable
+	(sgml-with-parser-syntax): set sgml-last-buffer
+	(sgml-mainbuf-point): new function
+	(sgml-max-pos-in-tree): new function
+	(sgml-update-display): don't call sgml-find-start-point, use
+	sgml-max-pos-in-tree to figure out if there is much to parse.
+	(sgml-parse-to): calls sgml-parser-loop directly no
+	sgml-parse-continue.
+	(sgml-parse-continue): use sgml-with-parser-syntax-ro and
+	set-buffer to sgml-last-buffer.
+
+2000-08-24  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml.el (sgml-insert-defaulted-attributes): new option
+	* psgml-edit.el (sgml-insert-attributes): check new option
+
+	* psgml-fs.el (style-format): set ps-left-header to include a
+	style-sheet specified title and the filename. (for ps-print-buffer)
+	(fs-special-styles): New special style 'title' for setting title.
+	(fs-do-style): handle title style
+	(fs-element-content): make element argument optional, defaults to
+	current element.
+
+2000-08-08  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml-edit.el (sgml-insert-element): Fix bug with empty element.
+
+Thu Aug  3 07:52:46 2000  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-edit.el (sgml-insert-element): Fix bug when inserting
+	element at end of buffer.
+
+2000-08-03  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml-edit.el (sgml-attribute-buffer): Fix missing space for
+	unspecified required attributes.
+
+2000-06-05  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml-dtd.el (sgml-parse-parameter-literal): use
+	buffer-substring-no-properties .
+
+2000-05-31  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml-api.el (sgml-parse-data): Don't call sgml-parse-loop
+	directly, use sgml-parse-continue.
+
+Sat May 27 00:04:31 2000  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-edit.el (sgml-attr-clean-and-insert): new command. Used to
+	automatically remove #DEFAULT when a character is typed.
+	(sgml-attr-default-keymap): keymap used as only for #DEFAULT in
+	attribute editing.
+
+Mon Apr 24 09:55:14 2000  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-edit.el (sgml-complete): Transform case on inserted names
+	using sgml-general-insert-case or sgml-entity-insert-case.
+
+Sun Apr 16 16:07:55 2000  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-edit.el (sgml-indent-line): compute indentation from
+ 	context, not element under point. Did this change once before but
+ 	had to back it out. This time take care of omitted end-tags by
+ 	choosing parent element as context, if point is at the very end of
+ 	the element. Don't do special attribute indenting for elements
+ 	that occur in data context.
+	(sgml-fill-region): Fix giving up to early.
+	(sgml-do-fill): indent tags of subelements in element context
+
+	* psgml-info.el (sgml-describe-element-type): Use sgml-princ-names
+	for occurs in section.
+
+2000-03-22  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml-edit.el (sgml-change-element-name): Add end-tag event if
+	original element is empty. (hmm this isn't quite right). Also use
+	sgml-find-context-of to find element, because -element-of gives
+	the element of the following char.
+
+Tue Jan  4 19:51:03 2000  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-parse.el (sgml-with-parser-syntax): Restore current buffer
+	before restoring syntax table.
+
+Tue Dec 21 20:50:31 1999  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-other.el (sgml-set-face-for): set rear-nonsticky for face
+	when sgml-use-text-properties is true. (Suggested by Dirk Frömbgen)
+
+Sat Dec 18 18:55:02 1999  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-charent.el (sgml-charent-to-display-char): use
+	buffer-substring-no-properties to allow for using text properties
+	for fontification.
+
+1999-11-02  Tim Bradshaw  <tfb@tfeb.org>
+
+ 	* psgml-edit.el (sgml-doctype-insert): made it not loop when it
+ 	gets a bogus nil
+
+1999-12-16  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml-parse.el (sgml-parse-prolog): restore buffer modified
+	after parsing. To allow using text properties for fontification.
+	(sgml-parse-continue): dito.
+	(sgml-parse-to): call sgml-parse-continue instead of calling
+	sgml-parser-loop directly.
+
+1999-12-15  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml.el: autoload for sgml-do-set-option
+
+1999-12-03  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml.el (sgml-mode-syntax-table): new variable
+	(sgml-mode): use sgml-mode-syntax-table
+
+1999-11-29  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml.el (sgml-validate-error-regexps): Also recognize warnings
+	(:W:) in output from nsgmls.
+
+1999-11-11  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml-parse.el (sgml-parse-to): Let sgml-with-parser-syntax wrap
+	a bigger chunk of the code to make sure the syntax table is set up
+	before any buffer changes.
+
+Tue Nov  9 16:25:53 1999  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-parse.el (sgml-modify-dtd): use sgml-general-case on names
+	from modifier.
+
+Mon Nov  8 22:13:12 1999  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-info.el (sgml-eltype-refrenced-elements): Copy sequence
+	before sorting destructively.
+	(sgml-describe-element-type): Include exceptions in info display.
+
+Thu Nov  4 19:07:09 1999  Lennart Staflin  <lenst@lysator.liu.se>
+
+	* psgml-parse.el (sgml-note-change-at): If in XML mode and
+ 	previous char is /, back up one char. This allows for the />
+ 	delimiter to be recognized even if the start tag has been
+ 	previously parsed as an improperly ended tag.
+
+	* psgml-edit.el (sgml-last-element): don't use sgml-last-element
+	for XML (there is not omitted tags to account for).
+
+1999-10-21  Lennart Staflin  <lennarts@infotek.no>
+
+	* psgml-parse.el (sgml-push-to-entity): restore the (erase-buffer)
+	that had been commented out. This is needed for the case when 
+	sgml-try-merge-compiled-dtd fails and leaves junk in the buffer.
+	
+1999-10-19  Lennart Staflin  <lennarts@infotek.no>
+	
+	* Version 1.2.1 released
+	
 1999-10-14  Lennart Staflin  <lennarts@infotek.no>
 
 	* psgml-parse.el (sgml-log-entity-stack): don't use

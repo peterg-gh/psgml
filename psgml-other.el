@@ -1,5 +1,5 @@
 ;;;; psgml-other.el --- Part of SGML-editing mode with parsing support
-;; $Id: psgml-other.el,v 2.16 1999/06/16 18:24:15 lenst Exp $
+;; $Id: psgml-other.el,v 2.18 1999/12/21 22:47:03 lenst Exp $
 
 ;; Copyright (C) 1994 Lennart Staflin
 
@@ -115,7 +115,9 @@ if the item is selected."
 	    (before-change-function nil) ; obsolete variable
 	    (after-change-functions nil)
 	    (before-change-functions nil))
-	(put-text-property start end 'face face)))
+	(put-text-property start end 'face face)
+        (when (< start end)
+          (put-text-property (1- end) end 'rear-nonsticky '(face)))))
      (t
       (let ((current (overlays-at start))
 	    (pos start)
@@ -126,7 +128,7 @@ if the item is selected."
 		      (eq type (overlay-get (car current) 'sgml-type)))
 		 (setq old-overlay (car current)))
 		((overlay-get (car current) 'sgml-type)
-		 (message "delov: %s" (overlay-get (car current) 'sgml-type))
+		 ;;(message "delov: %s" (overlay-get (car current) 'sgml-type))
 		 (delete-overlay (car current))))
 	  (setq current (cdr current)))
 	(while (< (setq pos (next-overlay-change pos))
