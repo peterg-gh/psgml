@@ -1,284 +1,317 @@
-This is the READ ME file for psgml.el version 0.4 beta 3.       -*- text -*-
+This is the READ ME file for psgml.el version 1.0.       -*- text -*-
 
-PSGML is a major mode for editing SGML documents.
-
-PSGML needs version 19 of GNU Emacs. It has been tested with 19.28,
-oemacs and with XEmacs 19.11.
+   PSGML is a major mode for editing SGML documents.  It works with
+GNU Emacs 19.19 and later or with XEmacs 19.13.
 
 This distribution should contain the following source files:
 	psgml.el
 	psgml.texi
 	psgml-other.el
 	psgml-lucid.el
+	psgml-edit.el
 	psgml-parse.el
 	psgml-dtd.el
+	psgml-info.el
+        psgml-charent.el
+	psgml-api.texi	-- internals documentation
+	psgml-api.el	-- Extra functions for the API
+	iso88591.map
+	Makefile.in
 
-In addition the distribution contains the compiled or formatted
-versions of the source files (psgml.info, psgml.elc, ...).
+In addition the distribution contains the formatted versions of the
+documentation files (psgml.info, ...). But the compiled elisp code is
+no longer supplied. You will have to byte compile the files before
+PSGML will achieve usable speed.
 
-The last part of this file describes how to install PSGML.
+PSGML now comes with autoconf support. See INSTALL for generic
+instructions. Run
+
+	sh configure
+	make
+
+and possibly
+
+	make install
+
+If you are using xemacs, you can run give the argument `--with-xemacs'
+to configure, or use `make xemacs'.
+
+Instead of using configure you can load the psgml-main.el file and run
+the command psgml-compile-files. Then you have to set load-path or
+move the .elc files.
 
 Send bug reports, comments and suggestions to lenst@lysator.liu.se.
-
 
-Changes in 0.4 beta 3
+New in version 1.0
 
-* Now works with oemacs
-That is, `sgml-save-dtd' and `sgml-load-dtd' works.
+* Main changes
 
-* The indentation code has been fixed
-Using `newline-and-indent' in the prolog will no longer insert a tab.
-Unfortunately, the tab key will not do anything in the prolog.  Parse
-errors that occur while computing the indentation will be ignore. This
-should make it easier to edit partial doctype declarations if you are
-using `newline-and-indent'.
+** Support for general entities
 
+** Support for short reference
+
+** Support for catalog files
+
+** New mechanism for caching parsed DTD
+
+** Includes commands to list various aspects of the DTD
+
+* Entity support
+
+PSGML will recognize entity references (except in attribute values). If
+the entity is a general text entity, PSGML will also parse the content
+of the entity. To support this PSGML has a new entity manager with a
+new mechanism for looking up entities (see belove).
+
+Short references are also supported, for the short reference delimiters
+from the concrete reference syntax.
+
+There are some new and changed commands to complete the entity support:
+
+** Command: `sgml-expand-entity-reference'
+
+Insert the text of the entity referenced at point.
+
+** Command: `sgml-expand-all-shortrefs'
+
+Expand all short references in the buffer. Short references to text
+entities are expanded to the replacement text of the entity, other
+short references are expanded into general entity references. If
+argument, `to-entity', is non-nil, or if called interactive with
+numeric prefix argument, all short references are replaced by generally
+entity references.
+
+** Command: `sgml-normalize'
+
+Changed to expand short references also. Normalize buffer by filling in
+omitted tags and expanding empty tags. Argument `to-entity' controls
+how short references are expanded as with `sgml-expand-all-shortrefs'.
+
+* Fontification
+
+If `sgml-set-face' is true and the DTD has been activated, PSGML will
+automatically set the face of markup in the buffer.
+
+First the current line is parsed and fontified. If this would mean
+parsing more than 500 chars, wait 1 second first.
+
+The rest of the buffer is fontified after 6 seconds idle time.
+
+Fontification can be interrupted by any input event.
+
+The buffer can be fontified initially if `sgml-auto-activate-dtd' is
+true.
+
+* New entity manager
+
+The new entity manager will handle an entity reference thus:
+
+** If the entity has a system identifier, the entity manager will first
+try and call the functions on `sgml-sysid-resolve-functions' with the
+system identifier as argument, and if any function returns non-nil
+assume that the function has handled the entity.
+
+** If the entity has a system identifier and
+`sgml-system-identifiers-are-preferred' is non-nil, the system
+identifier will be used as a file name relative to the file containing
+the entity declaration.
+
+** Next the entity manager will try the catalog, and
+
+** if not found there use the `sgml-public-map'.
+
+** Finally if the entity has not been found and it has a system
+identifier, this will be used as a file name.
+
+Note: `sgml-system-path' is no longer used for entity lookup.
+
+The catalog files searched is given by the variable
+`sgml-local-catalogs' and `sgml-catalog-files'. The
+`sgml-catalog-files' variable is initialized from the environment
+variable `SGML_CATALOG_FILES' (should be a colon separated list of
+files). The `sgml-local-catalogs' variable is assumed to be set in a
+files local variables.
+
+File names for external entities (e.g system identifiers) are relative
+to the directory containing the file declaring the entity.
+
+The `sgml-public-map' is initialized from the environment variable
+`SGML_PATH'.
+
+`sgml-system-path' defaults to nil.
+
+Supports most of sgmls substitutions for sgml-public-map. Supported:
+%%, %N, %P, %S, %Y, %C, %L, %O, %T, %V. Unsupported: %D, %X, %A, %E,
+%I, %R, %U. Note: that %D is and alias for %C in PSGML (historical
+accident).
+
+* New and changed options
+
+** `sgml-recompile-out-of-date-cdtd'
+
+** New options for insert-element:
+`sgml-insert-missing-element-comment' and
+`sgml-insert-end-tag-on-new-line'.
+
+** `sgml-validate-files' and slight change of `sgml-validate-command'
+
+The variable `sgml-validate-command' can now be a list of strings. The
+strings can contain %-sequences that will be expanded: %b to buffer
+file name, %s to SGML Declaration file, either the value of
+sgml-declaration variable or SGML Declaration file for parent document
+or DOCTYPE file or SGMLDECL from catalog. %d value of `sgml-doctype'.
+
+** `sgml-set-face'
+
+Now automatically sets faces for all visible text, with a delay of 1s.
+
+** `sgml-exposed-tags'
+
+The list of tag names that remain visible, despite `M-x
+sgml-hide-tags'. Each name is a lowercase string, and start-tags and
+end-tags must be listed individually.
+
+** `sgml-auto-activate-dtd'
+
+PSGML was behaving inconsistent when a new file was loaded. If the
+variable `sgml-set-face' was true the DTD would automatically be
+activated (loaded or parsed), but only if psgml-parse already loaded.
+
+Rather than let `sgml-set-face' decide if the DTD is activated, there
+is now a distinct option for this. This option works even the first
+time.
+
+If non-nil, loading a sgml-file will automatically try to activate its
+DTD. Activation means either to parse the document type declaration or
+to load a previously saved parsed DTD. The name of the activated DTD
+will be shown in the mode line.
+
+* Various
+
+** Tracing catalog lookup
+
+To help debug entity lookup there is a new option
+`sgml-trace-entity-lookup'. If this option is t messages will be logged
+in *SGML LOG* buffer when external entities are looked up. These
+messages shows entity, catalogs searched, and entry type in catalog
+where entity was found.
+
+** Translating between characters and entity references
+
+Set the variable `sgml-display-char-list-filename' to a file that
+contains mappings between all characters present in the presentation
+character set, and their "standard replacement text" names, e.g. "å" ->
+"[aring ]", e.t.c. The default value for this variable is
+`iso88591.map'.
+
+Use the functions (also in the Modify menu)
+`sgml-charent-to-display-char' and `sgml-display-char-to-charent' to
+translate between entities and characters.
+
+** Handling of missing DOCTYPE
+
+If the document prolog does not contain a document type declaration,
+PSGML will try to supply one on the form `<!DOCTYPE DocTypeName
+SYSTEM>' If the variable `sgml-default-doctype-name' is defined this
+will be used for the document type name, otherwise the GI of the first
+start tag will be used. I.e., if the document starts with `<book>', a
+document type declaration `<!DOCTYPE book SYSTEM>' will be assumed.
+
+** Handling of tags for undefined elements
+
+*** Start-tags for undefined elements will either be ignored, if
+`sgml-ignore-undefined-elements' is `t', or assumed to be acceptable in
+the current element and defined with `O O ANY'.
+
+*** An end-tag for an element that is not currently open will be
+ignored.
+
+** Cleaned up Markup menu
+
+The removed entries can be added with sgml-custom-markup:
+
+(setq sgml-custom-markup
+      '(("<!entity ... >" "<!entity \r>\n")
+        ("<!attlist ... >" "<!attlist \r>\n")
+        ("<!element ... >" "<!element \r>\n")
+        ("<!doctype ...>" "<!doctype \r -- public or system --\n[\n]>\n")
+        ("Local variables comment" "<!--\nLocal variables:\n\rEnd:\n-->\n")
+        ("Comment" "<!-- \r -->\n") ))
+
+** New commands
+
+Thanks to David Megginson the custom menus are now reachable from the
+keyboard:
+
+`C-c C-u C-d' (`sgml-custom-dtd')
+
+`C-c C-u C-m' (`sgml-custom-markup')
+
+* Changes to API
+
+** New hooks
+
+*** `sgml-close-element-hook'
+
+The hook run by `sgml-close-element'. These functions are invoked with
+`sgml-current-tree' bound to the element just parsed.
+
+*** `sgml-new-attribute-list-function'
+
+This hook is run when a new element is inserted to construct the
+attribute specification list. The default function prompts for the
+required attributes.
+
+*** `sgml-doctype-parsed-hook'
+
+This hook is called after the doctype has been parsed. It can be used
+to load any additional information into the DTD structure.
+
+Example: add description to element types
+
+(defun set-help-info ()
+  (let ((help '(("para" "A Paragraph")
+		("q"    "A Quotation")
+		("date" "A Date")))
+	(dtd (sgml-pstate-dtd sgml-buffer-parse-state)))
+    (loop for h in help do
+	  (setf (sgml-eltype-appdata (sgml-lookup-eltype (first h) dtd)
+				     'help-string)
+		(second h)))))
+(add-hook 'sgml-doctype-parsed-hook 'set-help-info)
+(defun sgml-help-for-element ()
+  (interactive)
+  (let* ((el (sgml-find-element-of (point)))
+	 (help (sgml-element-appdata el 'help-string)))
+    (and help
+	 (message "%s" help))))
+
+*** sgml-sysid-resolve-functions
+
+This variable should contain a list of functions. Each function should
+take one argument, the system identifier of an entity. If the function
+can handle that identifier, it should insert the text of the entity
+into the current buffer at point and return t. If the system identifier
+is not handled the function should return nil.
+
+Example use: Support URLs as system identifiers
+
+(defun sgml-url-sysid (sysid)
+  (cond ((string-match "^\\([a-z]+\\):" sysid) ; looks like url
+	 (require 'url)
+	 (set-buffer (prog1 (current-buffer)
+		       (url-retrieve sysid)))
+	 (insert-buffer url-working-buffer)
+	 t)))
+(add-hook 'sgml-sysid-resolve-functions 'sgml-url-sysid)
+
+** New file psgml-api.el
+
+This file contain API-functions that are not used by other parts of
+psgml. Use `(require 'psgml-api)' to use the API functions (psgml-api
+includes the rest of the psgml files).
 
-Changes in 0.4 beta 2
-*********************
-
-* Fixed bug with sgml-next-data-field
-* Fixed bug with sgml-attrib-menu in Lucid Emacs
-* Fixed bug parsing ranked groups
-* Fixed bugs in public map substitutions
-* New substitutions for sgml-public-map (like sgmls)
-** %N -- Entity name
-** %V -- Version  (translitterated)
-** %L -- Language (downcased)
-
-
-
-Changes in 0.4
-**************
-
-* Important bugs fixed
-
-** The variables `sgml-omittag' and `sgml-shorttag' can be set to
-reflect the SGML declaration in use. This will make the parser behave
-correctly. Attribute editing will not generate attribute specifications
-with minimizations not supported by the setting of omittag and
-shorttag.
-
-** Default values for options are set to make PSGML conservative when
-generating markup.
-
-** The DTD parser will accept DTDs using ranked elements and data tag
-groups.
-
-** Regexp for paragraph recognition fixed. This affected paragraph
-movement, sentence movement and dynamic abbreviations.
-
-** Public identifiers are now correctly parsed. Strips blanks from
-start and end. Converts sequences of white space to one blank.
-
-** Fixed incorrect parsing of parameter literals. Recognition of ending
-delimiter in entity reference. Understands numeric character
-references.
-
-* New menus and functions for inserting tags
-
-Old "insert tag" functionality available with mouse button click in
-buffer.
-
-New menus:
-
-** "Insert element" works as `C-c C-e', i.e. always insert start and
-end-tags.
-
-** "Insert start-tag"
-
-** "Insert end-tag" contains all valid end-tags, independent of
-`sgml-omittag-transparent'.
-
-** "Tag region" works as `C-c C-r'
-
-* Display features
-
-** A mode line indicator of active DTD.
-
-** PSGML can now set the face of various markup while parsing. Set the
-variable `sgml-set-face' to `t'. And set the variable
-`sgml-markup-faces' to a alist mapping markup types to faces. Default
-is:
-
-((start-tag . bold)           
- (end-tag . bold)           
- (comment . italic)           
- (pi . bold)           
- (sgml . bold)           
- (doctype . bold))         
-
-The markup types is from a classification scheme already in use in the
-parser. They may not match the distinctions you want to highlight with
-different faces. This makes parsing slower, with many elements it may
-be much slower.
-
-** The mode line can now display the current element name. Set the
-variable `sgml-live-element-indicator' to t. Using this has noticeable
-overhead. Every command in the buffer will cause the parser to be
-called.
-
-* Better handling of attributes
-
-** "Insert element" and `C-c C-e' also inserts required attributes.
-`sgml-normalize' also normalizes attribute specification lists.
-
-** If the point is immediately after a start-tag, `C-c C-a'
-(`sgml-edit-attrib') will edit the attributes of that tag, otherwise
-the attributes of the element after point will be edited. The reason
-for this change is to make it easier to edit the attributes of an
-inserted empty element.
-
-** There is now a command `C-c +' (`sgml-insert-attribute') that asks
-for a attribute name and value and inserts/changes this attribute. The
-element affected is the same as for `sgml-edit-attrib'.
-
-** Attributes can also be inserted from a menu. The menu is available
-from the menu bar in "Markup". Alternatively you can put the point
-inside the start-tag and use S-mouse-1 (for lucid it is mouse-3).
-
-This menu will have one pane for every attribute that has a token list
-(or notation list) as declared valued, and one pane for all the other
-attributes.
-
-** `sgml-change-element-name' (`C-c =') now tries to translate
-attribute specifications. An attribute a will be translated to an
-attribute with the same name. If the new element has no attribute with
-the same name, the attribute will be ignored. If there is an attribute
-with the same name but different declared content, a warning is given.
-ID attributes are handled special, an attribute with declared value ID
-will always be translated to the attribute with declared value ID.
-
-* New commands
-
-** `C-c C-k' (`sgml-kill-markup') Kill next tag, markup declaration or
-process instruction.
-
-** `C-c -' (`sgml-untag-element') Remove tags from current element.
-
-** `C-c RET' (`sgml-split-element') Split the current element at point.
-If repeated, the containing element will be split before the beginning
-of then current element (and then the element containing the containing
-element). Useful for starting new paragraphs.
-
-** `C-c #' (`sgml-make-character-reference') Convert a character to a
-character reference. Convert a character reference to a character with
-`C-u C-c #'.
-
-* Enhanced functions
-
-** More informative display from `C-c C-t' (`sgml-list-valid-tags').
-
-** Movement and omitted tags
-
-*** `C-M-a' (`sgml-beginning-of-element')
-
-*** `C-M-e' (`sgml-end-of-element')
-
-*** `C-c C-n' (`sgml-up-element')
-
-*** `C-M-u' (`sgml-backward-up-element')
-
-*** `C-M-b' (`sgml-backward-element')
-
-*** `C-M-f' (`sgml-forward-element')
-
-*** `C-M-d' (`sgml-down-element')
-
-The listed commands now work a little different. If you type any of the
-commands repeatedly it will remember where it should be in the element
-structure rather than determine that from parsing the buffer.
-
-** Commands to hide and show tags. Hidden text is write protected (also
-true for `sgml-hide-attributes'). NOTE: These are not well documented
-and the hidden text might be confusing as you can have the cursor in
-the middle of hidden text. It might even confuse some versions of
-Emacs.
-
-** `sgml-custom-dtd' entries can set any variables.
-
-* Miscellaneous changes
-
-** A variable `sgml-buggy-subst-char-in-region' can be set to nil to
-make the folding commands faster at the expense of the buffer becoming
-modified. This is due to a bug in the Emacs function
-`sgml-subst-char-in-region' (at least in 19.22). Normally this bug is
-circumvented, but it may cause file accesses if the buffer is
-unmodified.
-
-** The `C-M-@' (`sgml-mark-element') and `C-M-k' (`sgml-kill-element')
-works more like the corresponding lisp-mode commands. The region marked
-or killed is from point to the end of next element. The command `C-M-h'
-(`sgml-mark-current-element') now has the old `C-M-@' functionality.
-
-** I have tried to make the options that will be document dependent
-into automatically buffer local variables. This makes it easier to
-change them with `M-x set-variable' and the use `M-x
-sgml-save-options'. No change if you use the menus. But if you set
-options in your `.emacs' you should use `setq-default' instead of
-`setq'. The following variables have been made buffer local:
-`sgml-parent-document', `sgml-omittag', `sgml-shorttag',
-`sgml-always-quote-attributes', `sgml-indent-step' and
-`sgml-indent-data'.
-
-
-
-Installing PSGML
-****************
-
-   Place the `*.el' and the `*.elc' files in a directory where Emacs
-can find it (i.e. one of the directories in the `load-path' variable,
-you can add a directory to this variable in your `.emacs'.)  If you
-obtained PSGML without `*.elc' files, you can create them by letting
-Emacs byte compile the `*.el' files (use `M-x byte-compile-file').
-Parsing SGML in Emacs Lisp is slow and needs all the speed it can get.
-
-   Put the following line in your .emacs:
-
-     (autoload 'sgml-mode "psgml" "Major mode to edit SGML files." t )
-
-Modify search path for external entities
-========================================
-
-   SGML can refer to external files (really entities) either with public
-identifiers or with system identifiers.  PSGML uses the variable
-`sgml-public-map' to map public identifiers to file names.
-
-   A public identifier looks like
-
-     PUBLIC "ISO 8879:1986//ENTITIES Added Latin 1//EN"
-
-where "ISO 8879:1986" is the owner, "ENTITIES" is the text class and
-"Added Latin 1" is the text description (and "EN" is language).  With
-the default setting of `sgml-public-map' Emacs would look for this file
-in
-
-     /usr/local/lib/sgml/ISO_8879:1986/entities/Added_Latin_1
-
-   Note: blanks are transliterated to `_' (and also `/' to `%') and the
-text class is down cased.
-
-   The default for `sgml-public-map' giving the above path is
-
-     ("/usr/local/lib/sgml/%o/%c/%d")
-
-   The `sgml-public-map' variable can contain a list of file name
-templates where `%P' will be substituted with the whole public
-identifier, owner is substituted for `%O', public text class for `%C',
-and public text description for `%D'.  The text class will be converted
-to lower case and the owner and description will be transliterated
-according to the variable `sgml-public-transliterations'.  The
-templates in the list is tried in order until an existing file is
-found.  An element can also be a dotted pair `(REGEXP . FILENAME)', the
-FILENAME is a string treated as above, but only if the regular
-expression, REGEXP, matches the public identifier.
-
-   A system identifier looks like
-
-     SYSTEM "htmlplus.dtd"
-
-where "htmlplus.dtd" is a system-specific identifier. PSGML treats
-system identifiers as file names and looks for them in the directories
-listed in the variable `sgml-system-path' (default is either in current
-directory or in `~/sgml').
-
+Local variables:
+mode: text
+mode: outline
+end:

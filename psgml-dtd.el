@@ -1,5 +1,5 @@
 ;;;; psgml-dtd.el --- DTD parser for SGML-editing mode with parsing support
-;; $Id: psgml-dtd.el,v 1.15.1.2 1995/02/09 21:55:40 lenst Exp $
+;; $Id: psgml-dtd.el,v 2.15 1996/11/11 00:43:45 lenst Exp $
 
 ;; Copyright (C) 1994 Lennart Staflin
 
@@ -27,8 +27,16 @@
 
 ;;;; Code:
 
+(provide 'psgml-dtd)
 (require 'psgml)
 (require 'psgml-parse)
+
+
+;;;; Variables
+
+;; Variables used during doctype parsing and loading
+(defvar sgml-used-pcdata nil
+  "True if model group built is mixed")
 
 
 ;;;; Constructing basic
@@ -76,7 +84,7 @@
 	(setq m (sgml-move-dest (car ms))
 	      ms (cdr ms))
 	(unless (sgml-normal-state-p m)
-	  (setq m (sgml-&node-next m)))
+	  (setq m (sgml-and-node-next m)))
 	(unless (memq m states)
 	  (nconc states (list m))))
       (setq l (cdr l)))
@@ -138,59 +146,58 @@ Syntax: var dfa-expr &body forms"
 		 (sgml-move-dest (sgml-moves-lookup (sgml-move-token m)
 						    (sgml-state-reqs s2)))))))
 
-(defun sgml-other-start-state (s)
-  ;; Look for another state accesible from S that is
-  ;; equivalent to S.  Using this state insted may save a state.
-  ;; This optimization should be safe, and appropriate for * and +.
-  (sgml-debug "OPT other start: reqs %d opts %d"
+(defun sgml-remove-redundant-states-1 (s)
+  ;; Remove states accessible from s with one move and equivalent to s,
+  ;; by changing the moves from s.
+  (sgml-debug "OPT redundant-1: reqs %d opts %d"
 	      (length (sgml-state-reqs s))
 	      (length (sgml-state-opts s)))
-  (let ((considered nil)
-	(l (append (sgml-state-reqs s)
-		   (sgml-state-opts s)))
-	(res s)
+  (let ((yes nil)
+	(no (list s))
+	(l (sgml-state-reqs s))
+	(nl (sgml-state-opts s))
 	dest)
-    (while l
+    (while (or l (setq l (prog1 nl (setq nl nil))))
       (cond
-       ((and (sgml-normal-state-p (setq dest (sgml-move-dest (car l))))
-	     (if (memq dest considered)
-		 nil
-	       (push dest considered))
-	     (sgml-states-equal s dest))
-	(sgml-debug "OPT other start: sucess")
-	(setq res dest
-	      l nil))
-       (t (setq l (cdr l)))))
-    res))
+       ((not (sgml-normal-state-p (setq dest (sgml-move-dest (car l))))))
+       ((memq dest no))
+       ((memq dest yes))
+       ((sgml-states-equal s dest)
+	(progn (push dest yes))))
+      (setq l (cdr l)))
+    (setq l (sgml-state-opts s)
+	  nl (sgml-state-reqs s))
+    (when yes
+      (sgml-debug "OPT redundant-1: sucess %s" (length yes))
+      (while (or l (setq l (prog1 nl (setq nl nil))))
+	(cond ((memq (sgml-move-dest (car l)) yes)
+	       (setf (sgml-move-dest (car l)) s)))
+	(setq l (cdr l))))))
+	  
 
 
 ;;;; Constructing
 
-(defun sgml-make-primitive-content-token (token)
-  (let ((s1 (sgml-make-state))
-	(s2 (sgml-make-state)))
-    (sgml-add-req-move s1 token s2)
-    s1))
-
 (defun sgml-make-opt (s1)
-  (setf (sgml-state-opts s1)
-	(append (sgml-state-opts s1)
-		(sgml-state-reqs s1)))
-  (setf (sgml-state-reqs s1) nil)
+  (when (sgml-state-reqs s1)
+    (setf (sgml-state-opts s1)
+	  (nconc (sgml-state-opts s1)
+		 (sgml-state-reqs s1)))
+    (setf (sgml-state-reqs s1) nil))
   s1)
 
 (defun sgml-make-* (s1)
   (setq s1 (sgml-make-+ s1))
-  (cond ((sgml-state-reqs s1)
-	 (sgml-other-start-state	; optimize
-	  (sgml-make-opt s1)))		; make-opt needed thoug
-	(t
-	 s1)))
+  (when (sgml-state-reqs s1)
+    (sgml-make-opt s1))
+  (sgml-remove-redundant-states-1 s1)
+  s1)
 
 (defun sgml-make-+ (s1)
   (sgml-for-all-final-states s s1
     (sgml-copy-moves-to-opt s1 s))
-  (sgml-other-start-state s1))		; optimize
+  (sgml-remove-redundant-states-1 s1)	; optimize
+  s1)
 
 (defun sgml-make-conc (s1 s2)
   (let ((moves (append (sgml-state-reqs s1) (sgml-state-opts s1))))
@@ -203,20 +210,12 @@ Syntax: var dfa-expr &body forms"
 	(sgml-copy-moves s2 s1)))
      (t					; general case
       (sgml-for-all-final-states s s1
-	(sgml-copy-moves s2 s)))))
-  s1)
-
-(defun sgml-make-alt (s1 s2)
-  (cond ((or (sgml-state-final-p s1)	; is result optional
-	     (sgml-state-final-p s2))
-	 (sgml-make-opt s1)
-	 (sgml-copy-moves-to-opt s2 s1))
-	(t
-	 (sgml-copy-moves s2 s1)))
+	(sgml-copy-moves s2 s)
+	(sgml-remove-redundant-states-1 s)))))
   s1)
 
 (defun sgml-make-pcdata ()
-  (sgml-make-opt (sgml-make-primitive-content-token sgml-pcdata-token)))
+  (sgml-make-* (sgml-make-primitive-content-token sgml-pcdata-token)))
 
 (defun sgml-reduce-, (l)
   (while (cdr l)
@@ -227,14 +226,18 @@ Syntax: var dfa-expr &body forms"
 
 (defun sgml-reduce-| (l)
   (while (cdr l)			; apply the binary make-alt
-    (setcar (cdr l)			; reducing the list l
-	    (sgml-make-alt (car l) (cadr l)))
-    (setq l (cdr l)))
+    (cond ((or (sgml-state-final-p (car l))	; is result optional
+	       (sgml-state-final-p (cadr l)))
+	   (sgml-make-opt (car l))
+	   (sgml-copy-moves-to-opt (cadr l) (car l)))
+	  (t
+	   (sgml-copy-moves (cadr l) (car l))))
+    (setcdr l (cddr l)))
   (sgml-one-final-state (car l))	; optimization
   (car l))
 
 (defun sgml-make-& (dfas)
-  (let ((&n (sgml-make-&node dfas (sgml-make-state)))
+  (let ((&n (sgml-make-and-node dfas (sgml-make-state)))
 	(s (sgml-make-state))
 	(l dfas))
     (while l				; For each si:
@@ -268,210 +271,146 @@ Syntax: var dfa-expr &body forms"
   ;;*** some comments are accepted that shouldn't
   (sgml-skip-ps))
 
-(defun sgml-parse-cro ()
-  (sgml-parse-chars ?& ?#))
+(defun sgml-parse-character-reference (&optional dofunchar)
+  ;; *** Actually only numerical character references
+  ;; I don't know how to handel the function character references.
+  ;; For the shortrefs let's give them numeric values.
+  (if (if dofunchar
+	  (sgml-parse-delim "CRO" (digit nmstart))
+	(sgml-parse-delim "CRO" (digit)))
+      (prog1 (if (sgml-is-delim "NULL" digit)
+		 (string-to-int (sgml-check-nametoken))
+	       (let ((spec (sgml-check-name)))
+		 (or (cdr (assoc spec '(("re" . 10)
+					("rs" . 1)
+					("tab" . 9)
+					("space" . 32))))
+		     ;; *** What to do with other names?
+		     127)))
+	(or (sgml-parse-delim "REFC")
+	    (sgml-parse-RE)))))
 
-(defun sgml-parse-character-reference ()
-  (if (sgml-parse-cro)
-      (if (looking-at "[0-9]")
-	  (prog1 (string-to-int (sgml-parse-nametoken-string))
-	    (or (sgml-parse-char ?\;)
-		(sgml-parse-char ?\n)))
-	;; It may be illegal or it may be a function char reference
-	;; *** leave it as it is 
-	(forward-char -2)
-	nil)))
-
-(defun sgml-parse-minimum-literal ()
-  "Parse a quoted SGML string and return it, if no string return nil."
-  (cond
-   ((memq (following-char) '(?\" ?\'))
-    (let* ((qchar (following-char))
-	   (blanks " \t\r\n")
-	   (qskip (format "^%s%c" blanks qchar))
-	   (start (point))
-	   (value			; accumulates the literal value
-	    "")
-	   (spaced ""))
-      (forward-char 1)
-      (skip-chars-forward blanks)
-      (while (not (sgml-parse-char qchar))
-	(cond ((eobp)
-	       (goto-char start)
-	       (sgml-parse-error "Unterminated literal"))
-	      ((not (zerop (skip-chars-forward blanks)))
-	       (setq spaced " "))
-	      (t
-	       (setq value
-		     (concat value spaced
-			     (buffer-substring
-			      (point)
-			      (progn (skip-chars-forward qskip)
-				     (point))))
-		     spaced ""))))
-      value))))
-
-(defun sgml-parse-external ()
-  "Leaves nil if no external id, or (pubid . sysid)"
-  (sgml-skip-ps)
-  (let* ((p (point))
-	 (token (sgml-parse-nametoken-string)))
-    (cond
-     (token
-      (setq token (sgml-gname-symbol token))
-      (sgml-skip-ps)
-      (cond ((memq token '(public system))
-	     (cons
-	      (if (eq token 'public)
-		  (or (sgml-parse-minimum-literal) ;the public id
-		      (sgml-error "Public identifier expected")))
-	      (progn (sgml-skip-ps)
-		     (sgml-parse-string)))) ;the system id
-	    (t
-	     (goto-char p)
-	     nil))))))
-
-(defun sgml-parse-parameter-literal ()
-  (let* ((qchar				; LIT or LITA
-	  (following-char))
-	 (qregexp			; what can be skipped in literal
-	  (format "^%c%%&" qchar))
+(defun sgml-parse-parameter-literal (&optional dofunchar)
+  (let* (lita				; flag if lita
 	 (value				; accumulates literals value
 	  "")
-	 (level				; Open parameters
-	  0)
-	 temp)
+	 (original-buffer		; Buffer (entity) where lit started
+	  (current-buffer))
+	 temp
+	 )
     (cond
-     ((memq qchar '(?\" ?\'))
-      (forward-char 1)
-      (while (not (and (zerop level)
-		       (sgml-parse-char qchar)))
+     ((or (sgml-parse-delim "LIT")
+	  (setq lita (sgml-parse-delim "LITA")))
+      (while (not (and (eq (current-buffer) original-buffer)
+		       (if lita
+			   (sgml-parse-delim "LITA")
+			 (sgml-parse-delim "LIT"))))
 	(cond ((eobp)
-	       (or (sgml-pop-param)
-		   (sgml-error "Parameter literal unterminated"))
-	       (setq level (1- level)))
-	      ((sgml-parse-char ?%)	;parameter entity reference
-	       (cond ((sgml-startnm-char-next)
-		      (sgml-push-to-param (sgml-check-entity-ref))
-		      (setq level (1+ level)))
-		     (t
-		      (setq value (concat value "%")))))
-	      ((setq temp (sgml-parse-character-reference))
-	       (setq value (concat value (format "%c" temp))))
+	       (or (sgml-pop-entity)
+		   (sgml-error "Parameter literal unterminated")))
+	      ((sgml-parse-parameter-entity-ref))
+	      ((setq temp (sgml-parse-character-reference dofunchar))
+	       (setq value (concat value (if (< temp 256)
+					     (format "%c" temp)
+					   (format "&#%d;" temp)))))
 	      (t
 	       (setq value
 		     (concat value
 			     (buffer-substring
 			      (point)
 			      (progn (forward-char 1)
-				     (skip-chars-forward qregexp)
-				     (point))))))))
+				     (if lita
+					 (sgml-skip-upto ("LITA" "PERO" "CRO"))
+				       (sgml-skip-upto ("LIT" "PERO" "CRO")))
+				     (point)))))))
+	)
       value))))
 
 (defun sgml-check-parameter-literal ()
   (or (sgml-parse-parameter-literal)
       (sgml-parse-error "Parameter literal expected")))
 
-(defun sgml-parse-connector ()
+(defsubst sgml-parse-connector ()
   (sgml-skip-ps)
-  (cond ((sgml-parse-char ?,)
+  (cond ((sgml-parse-delim "SEQ")
 	 (function sgml-reduce-,))
-	((sgml-parse-char ?|)
+	((sgml-parse-delim "OR")
 	 (function sgml-reduce-|))
-	((sgml-parse-char ?&)
+	((sgml-parse-delim "AND")
 	 (function sgml-make-&))))
 
-(defun sgml-check-grpc ()
-  (sgml-check-char ?\)))
-
-(defun sgml-parse-grpo ()
-  (sgml-parse-char ?\())
-
-(defun sgml-check-dtgc ()
-  (sgml-check-char ?\]))
-
-(defun sgml-parse-dtgo ()
-  (sgml-parse-char ?\[))
-
-(defun sgml-parse-name-string ()
-  "Parses a name and returns a string or nil if no name."
-  (and (sgml-startnm-char-next)
-       (let ((start (point)))
-	 (skip-syntax-forward "w_")
-	 (buffer-substring start (point)))))
-
 (defun sgml-parse-name-group ()
-  "Parse a singel name or a name group"
+  "Parse a single name or a name group (general name case) .
+Returns a list of strings or nil."
   (let (names)
     (cond
-     ((sgml-parse-grpo)
+     ((sgml-parse-delim "GRPO")
       (sgml-skip-ps)
-      (setq names (list (sgml-check-name)))
+      (setq names (sgml-parse-name-group)) ; *** Allows more than it should
       (while (sgml-parse-connector)
 	(sgml-skip-ps)
-	(push (sgml-check-name) names))
-      (sgml-check-grpc)
+	(nconc names (sgml-parse-name-group)))
+      (sgml-check-delim "GRPC")
       names)
-     ((setq names (sgml-parse-name-string))
-      (list (sgml-gname-symbol names))))))
+     ((setq names (sgml-parse-name))
+      (list names)))))
 
 (defun sgml-check-name-group ()
   (or (sgml-parse-name-group)
       (sgml-parse-error "Expecting a name or a name group")))
 
 (defun sgml-check-nametoken-group ()
+  "Parse a name token group, return a list of strings.
+Case transformed for general names."
   (sgml-skip-ps)
   (let ((names nil))
     (cond
-     ((sgml-parse-grpo)
+     ((sgml-parse-delim GRPO)
       (while (progn
 	       (sgml-skip-ps)
-	       (push (sgml-check-nametoken) names)
+	       (push (sgml-general-case (sgml-check-nametoken)) names)
 	       (sgml-parse-connector)))
-      (sgml-check-grpc)
-      names)
+      (sgml-check-delim GRPC)
+      (nreverse names))			; store in same order as declared
      (t
-      (list (sgml-check-nametoken))))))
+      (list (sgml-general-case (sgml-check-nametoken)))))))
 
 (defun sgml-check-element-type ()
-  "Parse and check an element type (name)."
+  "Parse and check an element type, returns list of strings."
 ;;; 117  element type     =  [[30 generic identifier]]
 ;;;                      |  [[69 name group]]
 ;;;                      |  [[118 ranked element]]
 ;;;                      |  [[119 ranked group]]
   (cond
-   ((sgml-parse-grpo)			; name group or raked group
+   ((sgml-parse-delim GRPO)
     (sgml-skip-ts)
     (let ((names (list (sgml-check-name))))
       (while (progn (sgml-skip-ts)
 		    (sgml-parse-connector))
 	(sgml-skip-ts)
 	(nconc names (list (sgml-check-name))))
-      (sgml-check-grpc)
+      (sgml-check-delim GRPC)
       ;; A ranked group will have a rank suffix here
       (sgml-skip-ps)
-      (when (looking-at "[0-9]")
-	(let ((suffix (sgml-parse-nametoken-string)))
-	  (setq names
-		(loop for n in names
-		      collect (sgml-gname-symbol
-			       (concat (symbol-name n) suffix))))))
-      names))
+      (if (sgml-is-delim "NULL" digit)
+	(let ((suffix (sgml-parse-nametoken)))
+	  (loop for n in names
+		collect (concat n suffix)))
+	names)))
    (t					; gi/ranked element
     (let ((name (sgml-check-name)))
       (sgml-skip-ps)
-      (list (if (and (>= (following-char) ?0)
-		     (<= (following-char) ?9))
-		(sgml-gname-symbol
-		 (concat (symbol-name name)
-			 (sgml-parse-nametoken-string)))
+      (list (if (sgml-is-delim "NULL" digit)
+		(concat name (sgml-check-nametoken))
 	      name))))))
+
 
 (defun sgml-check-external ()
   (or (sgml-parse-external)
       (sgml-parse-error "Expecting a PUBLIC or SYSTEM")))
 
 ;;;; Parse doctype: notation
+
 (defun sgml-declare-notation ()
   ;;148  notation declaration = MDO, "NOTATION",
   ;;                        65 ps+, 41 notation name,
@@ -496,18 +435,24 @@ Syntax: var dfa-expr &body forms"
 	 nil)))
 
 (defun sgml-parse-modifier ()
-  (cond ((sgml-parse-char ?+)
+  (cond ((sgml-parse-delim PLUS)
 	 (function sgml-make-+))
-	((sgml-parse-char ?*)
+	((sgml-parse-delim REP)
 	 (function sgml-make-*))
-	((sgml-parse-char ??)
+	((sgml-parse-delim OPT)
 	 (function sgml-make-opt))))
+
+(defun sgml-check-primitive-content-token ()
+  (sgml-make-primitive-content-token
+   (sgml-eltype-token
+    (sgml-lookup-eltype
+     (sgml-check-name)))))
 
 (defun sgml-check-model-group ()
   (sgml-skip-ps)
   (let (el mod)
     (cond
-     ((sgml-parse-grpo)
+     ((sgml-parse-delim "GRPO")
       (let ((subs (list (sgml-check-model-group)))
 	    (con1 nil)
 	    (con2 nil))
@@ -517,24 +462,23 @@ Syntax: var dfa-expr &body forms"
 		 (sgml-parse-error "Mixed connectors")))
 	  (setq con1 con2)
 	  (setq subs (nconc subs (list (sgml-check-model-group)))))
-	(sgml-check-grpc)
+	(sgml-check-delim "GRPC")
 	(setq el (if con1
 		     (funcall con1 subs)
 		   (car subs)))))
-     ((sgml-parse-rni 'pcdata)		; #PCDATA
+     ((sgml-parse-rni "pcdata")		; #PCDATA
       (setq sgml-used-pcdata t)
       (setq el (sgml-make-pcdata)))
-     ((sgml-parse-dtgo)			; data tag group
+     ((sgml-parse-delim "DTGO")			; data tag group
       (sgml-skip-ts)
-      (let ((gi (sgml-check-name)))
-	(sgml-skip-ts) (sgml-check-char ?,) ;*** SEQ
+      (let ((tok (sgml-check-primitive-content-token)))
+	(sgml-skip-ts) (sgml-check-delim "SEQ")
 	(sgml-skip-ts) (sgml-check-data-tag-pattern)
-	(sgml-skip-ts) (sgml-check-dtgc)
-	(setq el (sgml-make-conc (sgml-make-primitive-content-token gi)
-				 (sgml-make-pcdata)))
+	(sgml-skip-ts) (sgml-check-delim "DTGC")
+	(setq el (sgml-make-conc tok (sgml-make-pcdata)))
 	(setq sgml-used-pcdata t)))
      (t
-      (setq el (sgml-make-primitive-content-token (sgml-check-name)))))
+      (setq el (sgml-check-primitive-content-token))))
     (setq mod (sgml-parse-modifier))
     (if mod
 	(funcall mod el)
@@ -543,19 +487,19 @@ Syntax: var dfa-expr &body forms"
 (defun sgml-check-data-tag-pattern ()
   ;; 134  data tag pattern 
   ;; template | template group
-  (cond ((sgml-parse-grpo)
+  (cond ((sgml-parse-delim GRPO)
 	 (sgml-skip-ts)
 	 (sgml-check-parameter-literal)	; data tag template,
 	 (while (progn (sgml-skip-ts)
-		       (sgml-parse-char ?|)) ; *** OR
+		       (sgml-parse-delim OR))
 	   (sgml-skip-ts)
 	   (sgml-check-parameter-literal)) ; data tag template
 	 (sgml-skip-ts)
-	 (sgml-check-grpc))
+	 (sgml-check-delim GRPC))
 	(t
 	 (sgml-check-parameter-literal))) ; data tag template
   (sgml-skip-ts)
-  (when (sgml-parse-char ?,)  ; *** SEQ
+  (when (sgml-parse-delim SEQ)
     (sgml-check-parameter-literal)))	; data tag padding template
 
 (defun sgml-check-content-model ()
@@ -563,16 +507,30 @@ Syntax: var dfa-expr &body forms"
 
 (defun sgml-check-content ()
   (sgml-skip-ps)
-  (cond ((eq (following-char) ?\()
+  (cond ((sgml-is-delim GRPO)
 	 (sgml-check-content-model))
 	(t
-	 (let ((dc (sgml-check-name)))	;CDATA or RCDATA or EMPTY
-	   (intern (upcase (symbol-name dc)))))))
+	 ;; ANY, CDATA, RCDATA or EMPTY
+	 (let ((dc (intern (upcase (sgml-check-name))))) 
+	   (when (eq dc 'ANY)
+	     (setq sgml-used-pcdata t))
+	   dc))))
 
 (defun sgml-parse-exeption (type)
   (sgml-skip-ps)
   (if (sgml-parse-char type)
-      (sgml-check-name-group)))
+      (mapcar (function sgml-lookup-eltype)
+	      (sgml-check-name-group))))
+
+(defun sgml-before-eltype-modification ()
+;;;  (let ((merged (sgml-dtd-merged sgml-dtd-info)))
+;;;    (when (and merged
+;;;	       (eq (sgml-dtd-eltypes sgml-dtd-info)
+;;;		   (sgml-dtd-eltypes (cdr merged))))
+;;;      (setf (sgml-dtd-eltypes sgml-dtd-info)
+;;;	    (sgml-merge-eltypes (sgml-make-eltypes-table)
+;;;				(sgml-dtd-eltypes sgml-dtd-info)))))
+  )
 
 (defun sgml-declare-element ()
   (let* ((names (sgml-check-element-type))
@@ -582,57 +540,73 @@ Syntax: var dfa-expr &body forms"
 	 (model (sgml-check-content))
 	 (exclusions (sgml-parse-exeption ?-))
 	 (inclusions (sgml-parse-exeption ?+)))
+    (sgml-before-eltype-modification)
     (while names
       (sgml-debug "Defining element %s" (car names))
-      (sgml-define-element (car names) stag-opt etag-opt model
-			 exclusions inclusions
-			 sgml-used-pcdata)
-      (setq names (cdr names)))))
-
+      (let ((et (sgml-lookup-eltype (car names))))
+	(setf (sgml-eltype-stag-optional et) stag-opt
+	      (sgml-eltype-etag-optional et) etag-opt
+	      (sgml-eltype-model et) model
+	      (sgml-eltype-mixed et) sgml-used-pcdata
+	      (sgml-eltype-excludes et) exclusions
+	      (sgml-eltype-includes et) inclusions))
+      (setq names (cdr names)))
+    (sgml-lazy-message "Parsing doctype (%s elements)..."
+		       (incf sgml-no-elements))))
 
 ;;;; Parse doctype: Entity
 
 (defun sgml-declare-entity ()
-  (sgml-skip-ps)
-  (cond
-   ((sgml-parse-char ?%)		; parameter entity declaration
-    (sgml-set-param-entity (sgml-check-ename) (sgml-check-entity-text)))
-   (t					; normal entity declaration
-    (cond ((sgml-parse-rni 'default))
-	  (t				; general entity
-	   (push (symbol-name (sgml-check-ename))
-		 sgml-entities)))
-    (sgml-check-entity-text))))
-
-(defun sgml-check-entity-text ()
-  ;;105  entity text  = 66 parameter literal
-  ;;                 | 106 data text
-  ;;                 | 107 bracketed text
-  ;;                 | 108 external entity specification
-  (sgml-skip-ps)
-  (let ((external-id (sgml-parse-external)))
+  (let (name				; Name of entity
+	dest				; Entity table
+	(type 'text)			; Type of entity
+	text				; Text of entity
+	extid				; External id 
+	)
     (cond
-     (external-id			; external entity specification =
+     ((sgml-parse-delim "PERO")		; parameter entity declaration
+      (sgml-skip-ps)
+      (setq name (sgml-check-name t))
+      (setq dest (sgml-dtd-parameters sgml-dtd-info)))
+     (t					; normal entity declaration
+      (or (sgml-parse-rni "default")
+	  (setq name (sgml-check-name t)))
+      (setq dest (sgml-dtd-entities sgml-dtd-info))))
+    (sgml-skip-ps)
+    ;;105  entity text  = 66 parameter literal
+    ;;                 | 106 data text
+    ;;                 | 107 bracketed text
+    ;;                 | 108 external entity specification
+    (setq extid (sgml-parse-external))
+    (setq text
+	  (cond
+	   (extid			; external entity specification =
 					; 73 external identifier,
 					; (65 ps+, 109+ entity type)?
-      (sgml-skip-ps)
-      (sgml-parse-entity-type)
-      external-id)
-     ((sgml-startnm-char-next)
-      (let ((token (sgml-check-name)))
-	(sgml-skip-ps)
-	(cond
-	 ((memq token '(cdata sdata pi)) ; data text ***
-	  (sgml-check-parameter-literal))
-	 ((eq token 'starttag)
-	  (sgml-start-tag-of (sgml-check-parameter-literal)))
-	 ((eq token 'endtag)
-	  (sgml-end-tag-of (sgml-check-parameter-literal)))	
-	 ((eq token 'ms)		; marked section
-	  (concat "<![" (sgml-check-parameter-literal) "]]>"))
-	 ((eq token 'md)		; Markup declaration
-	  (concat "<!" (sgml-check-parameter-literal) ">")))))
-     ((sgml-check-parameter-literal)))))
+	    (sgml-skip-ps)
+	    (setq type (or (sgml-parse-entity-type) 'text))
+	    extid)
+	   ((sgml-startnm-char-next)
+	    (let ((token (intern (sgml-check-name))))
+	      (sgml-skip-ps)
+	      (cond
+	       ((memq token '(cdata sdata)) ; data text ***
+		(setq type token)
+		(sgml-check-parameter-literal))
+	       ((eq token 'pi)
+		(concat "<?" (sgml-check-parameter-literal) ">"))
+	       ((eq token 'starttag)
+		(sgml-start-tag-of (sgml-check-parameter-literal)))
+	       ((eq token 'endtag)
+		(sgml-end-tag-of (sgml-check-parameter-literal)))	
+	       ((eq token 'ms)		; marked section
+		(concat "<![" (sgml-check-parameter-literal) "]]>"))
+	       ((eq token 'md)		; Markup declaration
+		(concat "<!" (sgml-check-parameter-literal) ">")))))
+	   ((sgml-check-parameter-literal))))
+    (when dest
+      (sgml-entity-declare name dest type text))))
+
 
 (defun sgml-parse-entity-type ()
   ;;109+ entity type      = "SUBDOC"
@@ -640,8 +614,9 @@ Syntax: var dfa-expr &body forms"
   ;;                             65 ps+,
   ;;                             41 notation name,
   ;;                             149.2+ data attribute specification?)
-  (when (sgml-startnm-char-next)
-    (let ((type (sgml-check-name)))
+  (let ((type (sgml-parse-name)))
+    (when type
+      (setq type (intern (downcase type)))
       (cond ((eq type 'subdoc))
 	    ((memq type '(cdata ndata sdata))
 	     (sgml-skip-ps)
@@ -651,17 +626,18 @@ Syntax: var dfa-expr &body forms"
 	     ;;                        31 attribute specification list,
 	     ;;                        5 s*, DSC
 	     (sgml-skip-ps)
-	     (when (sgml-parse-char ?\[)
+	     (when (sgml-parse-delim DSO)
 	       (sgml-parse-attribute-specification-list)
-	       (sgml-skip-s)
-	       (sgml-check-char ?\])))
-	    (t (sgml-error "Illegal entity type: %s" type))))))
+	       (sgml-parse-s)
+	       (sgml-check-delim DSC)))
+	    (t (sgml-error "Illegal entity type: %s" type))))
+    type))
 
 
 ;;;; Parse doctype: Attlist
 
 (defun sgml-declare-attlist ()
-  (let* ((assnot (cond ((sgml-parse-rni 'notation)
+  (let* ((assnot (cond ((sgml-parse-rni "notation")
 			(sgml-skip-ps)
 			t)))
 	 (assel (sgml-check-name-group))
@@ -671,13 +647,14 @@ Syntax: var dfa-expr &body forms"
       (push attdef attlist))
     (setq attlist (nreverse attlist))
     (unless assnot
-      (while assel
-	(sgml-define-element-attlist (car assel) attlist)
-	(setq assel (cdr assel))))))
+      (sgml-before-eltype-modification)
+      (loop for elname in assel do
+	    (setf (sgml-eltype-attlist (sgml-lookup-eltype elname))
+		  attlist)))))
 
 (defun sgml-parse-attribute-definition ()
   (sgml-skip-ps)
-  (if (eq (following-char) ?>)		; End of attlist?
+  (if (sgml-is-delim MDC) ; End of attlist?
       nil
     (sgml-make-attdecl (sgml-check-name)
 		       (sgml-check-declared-value)
@@ -688,7 +665,7 @@ Syntax: var dfa-expr &body forms"
   (let ((type 'name-token-group)
 	(names nil))
     (unless (eq (following-char) ?\()
-      (setq type (sgml-check-name))
+      (setq type (intern (sgml-check-name)))
       (sgml-skip-ps))
     (when (memq type '(name-token-group notation))
       (setq names (sgml-check-nametoken-group)))
@@ -697,14 +674,15 @@ Syntax: var dfa-expr &body forms"
 (defun sgml-check-default-value ()
   (sgml-skip-ps)
   (let* ((rni (sgml-parse-rni))
-	 (key (if rni (sgml-check-name))))
+	 (key (if rni (intern (sgml-check-name)))))
+    (sgml-skip-ps)
     (sgml-make-default-value
      key
      (if (or (not rni) (eq key 'fixed))
 	 (sgml-check-attribute-value-specification)))))
 
 
-;;;; Parse doctype: shortref
+;;;; Parse doctype: Shortref
 
 ;;;150  short reference mapping declaration = MDO, "SHORTREF",
 ;;;                        [[65 ps]]+, [[151 map name]],
@@ -713,103 +691,49 @@ Syntax: var dfa-expr &body forms"
 ;;;                        [[65 ps]]*, MDC
 
 (defun sgml-declare-shortref ()
-  (sgml-check-name)			; map name
-  (while (progn
-	   (sgml-skip-ps)
-	   (sgml-parse-parameter-literal))
-    (sgml-skip-ps)
-    (sgml-check-name)))
+  (let ((mapname (sgml-check-name))
+	mappings literal name)
+    (while (progn
+	     (sgml-skip-ps)
+	     (setq literal (sgml-parse-parameter-literal 'dofunchar)))
+      (sgml-skip-ps)
+      (setq name (sgml-check-name t))
+      (push (cons literal name) mappings))
+    (sgml-add-shortref-map
+     (sgml-dtd-shortmaps sgml-dtd-info)
+     mapname
+     (sgml-make-shortmap mappings))))
 
 ;;;152  short reference use declaration = MDO, "USEMAP",
 ;;;                        [[65 ps]]+, [[153 map specification]],
 ;;;                        ([[65 ps]]+, [[72 associated element type]])?,
 ;;;                        [[65 ps]]*, MDC
 
-(defun sgml-declare-usemap ()
-  (or (sgml-parse-rni 'empty)
-      (sgml-check-name))		; map specification
-  (sgml-skip-ps)
-  (sgml-parse-name-group)) 		; associated element type
+(defun sgml-do-usemap-element (mapname)
+  ;; This is called from sgml-do-usemap with the mapname
+  (sgml-before-eltype-modification)
+  (loop for e in (sgml-parse-name-group) do
+	(setf (sgml-eltype-shortmap (sgml-lookup-eltype e sgml-dtd-info))
+	      (if (null mapname)
+		  'empty
+		mapname))))
 
 
 ;;;; Parse doctype
 
 (defun sgml-check-dtd-subset ()
-  (let ((elcnt ""))
-    (message "Parsing doctype%s" elcnt)
+  (let ((sgml-parsing-dtd t)
+	(eref sgml-current-eref))
     (while 
-	(cond
-	 ((sgml-parse-ds))
-	 ((sgml-parse-marked-section-start) ; marked section start
-	  (sgml-check-marked-section)
-	  t)
-	 ((sgml-parse-mdo)
-	  (let ((token (sgml-check-name)))
-	    (sgml-skip-ps)
-	    (cond
-	     ((eq token 'element) 	(sgml-declare-element)
-	      (setq elcnt (concat elcnt "."))
-	      (when (> (length elcnt) 60) (setq elcnt ""))
-	      (message "Parsing doctype%s" elcnt))
-	     ((eq token 'entity)	(sgml-declare-entity))
-	     ((eq token 'attlist) 	(sgml-declare-attlist))
-	     ((eq token 'notation) 	(sgml-declare-notation))
-	     ((eq token 'shortref)	(sgml-declare-shortref))
-	     ((eq token 'usemap)	(sgml-declare-usemap))
-	     (t
-	      (sgml-log-warning "Ignoring markup declaration %s" token)))
-	    (sgml-skip-ps)
-	    (condition-case err
-		(sgml-check-mdc)
-	      (error
-	       (sgml-log-message "Skipping and restarting parse.")
-	       (sgml-skip-markup-declaration)))
-	    t))
-	 ((sgml-parse-marked-section-end)) ; end of marked section
-	 ))
-    (when (sgml-any-open-param/file)
-      (sgml-error "DTD subset ended"))))
+	(progn
+	  (setq sgml-markup-start (point))
+	  (cond
+	   ((and (eobp) (eq sgml-current-eref eref))
+	    nil)
+	   ((sgml-parse-ds))
+	   ((sgml-parse-markup-declaration 'dtd))
+	   ((sgml-parse-delim "MS-END")))))))
 
-(defun sgml-check-doctype ()
-  (sgml-skip-ps)
-  (let ((docname (sgml-check-name))
-	(external (sgml-parse-external)))
-    (sgml-skip-ps)
-    (cond
-     ((sgml-parse-char ?\[)
-      (sgml-check-dtd-subset)
-      (sgml-check-char ?\])))
-    (cond (external
-	   (sgml-push-to-file (sgml-external-file external))
-	   (sgml-check-dtd-subset)))
-    (sgml-skip-ps)
-    (sgml-check-char ?>)
-    (sgml-make-primitive-content-token docname)))
-
-;;;; Parse prolog
-
-(defun sgml-parse-prolog ()
-  "Parse the document prolog to learn the DTD."
-  (interactive)
-  (sgml-clear-log)
-  (message "Parsing prolog...")
-  (setq	sgml-eltype-map nil		; Remove old element dcl
-	sgml-param-entities nil
-	sgml-entities nil)
-  (goto-char (point-min))
-  (sgml-with-parser-syntax
-   (sgml-skip-ds)   
-   (sgml-skip-sgml-dcl)
-   (sgml-skip-ds)
-   (cond ((sgml-parse-mdo)
-	  (cond ((eq 'doctype (sgml-check-nametoken))
-		 (sgml-set-doctype (sgml-check-doctype))
-		 (setq sgml-buffer-eltype-map sgml-eltype-map
-		       sgml-buffer-param-entities sgml-param-entities
-		       sgml-buffer-entities (sort sgml-entities
-						  (function string-lessp))
-		       ))))))
-  (sgml-message "Parsing prolog...done"))
 
 ;;;; Save DTD: compute translation
 
@@ -836,7 +760,7 @@ Syntax: var dfa-expr &body forms"
 	     (sgml-translate-moves (sgml-state-opts (caar p)))
 	     (sgml-translate-moves (sgml-state-reqs (caar p))))
 	    (t
-	     (sgml-translate-node (sgml-&node-next (caar p)))))
+	     (sgml-translate-node (sgml-and-node-next (caar p)))))
       (setq p (cdr p)))
     sgml-translate-table))
 
@@ -856,14 +780,17 @@ Syntax: var dfa-expr &body forms"
 	      (logand (- num sgml-max-single-octet-number) 255))
     (insert num)))
 
-(defsubst sgml-code-token (token)
+(defun sgml-code-token-number (token)
   (let ((bp (assq token sgml-code-token-numbers)))
     (unless bp
       (setq sgml-code-token-numbers
 	    (nconc sgml-code-token-numbers
 		   (list (setq bp (cons token
 					(length sgml-code-token-numbers)))))))
-    (sgml-code-number (cdr bp))))
+    (cdr bp)))
+
+(defun sgml-code-token (token)
+  (sgml-code-number (sgml-code-token-number token)))
 
 (defmacro sgml-code-sequence (loop-c &rest body)
   "Produce the binary coding of a counted sequence from a list.
@@ -881,7 +808,8 @@ FORMS should produce the binary coding of element in VAR."
 
 (defun sgml-code-sexp (sexp)
   (let ((standard-output (current-buffer)))
-    (print sexp)))
+    (prin1 sexp)
+    (terpri)))
 
 (defun sgml-code-tokens (l)
   (sgml-code-sequence (x l)
@@ -905,58 +833,57 @@ FORMS should produce the binary coding of element in VAR."
 	  (sgml-code-move x)))
        (t				; s is a &-node
 	(insert 255)			; Tag &-node
-	(insert (sgml-code-xlate (sgml-&node-next s)))
-	(sgml-code-sequence (m (sgml-&node-dfas s))
+	(insert (sgml-code-xlate (sgml-and-node-next s)))
+	(sgml-code-sequence (m (sgml-and-node-dfas s))
 	  (sgml-code-model m)))))))
 
-(defun sgml-code-element (el)
-  (sgml-code-token (sgml-eltype-name el))
-  (insert (+ (if (sgml-eltype-stag-optional el) 1 0)
-	     (if (sgml-eltype-etag-optional el) 2 0)
-	     (if (sgml-eltype-mixed el) 4 0)))
-  (let ((c (sgml-eltype-model el))
-	(name (sgml-eltype-name el))
-	u)
-    (cond ((eq c sgml-cdata) (insert 0))
-	  ((eq c sgml-rcdata) (insert 1))
-	  ((eq c sgml-empty) (insert 2))
-	  ((eq c sgml-any) (insert 3))
-	  (t
-	   (assert (sgml-model-group-p c))
-	   (insert 128)
-	   (sgml-code-model c))))
-  (sgml-code-tokens (sgml-eltype-includes el))
-  (sgml-code-tokens (sgml-eltype-excludes el))
-  (sgml-code-sexp (sgml-eltype-attlist el)))
+(defun sgml-code-element (et)
+  (sgml-code-sexp (sgml-eltype-all-miscdata et))
+  (cond
+   ((not (sgml-eltype-defined et))
+    (insert 128))
+   (t
+    (insert (sgml-eltype-flags et))
+    (let ((c (sgml-eltype-model et)))
+      (cond ((eq c sgml-cdata) (insert 0))
+	    ((eq c sgml-rcdata) (insert 1))
+	    ((eq c sgml-empty) (insert 2))
+	    ((eq c sgml-any) (insert 3))
+	    ((null c) (insert 4))
+	    (t
+	     (assert (sgml-model-group-p c))
+	     (insert 128)
+	     (sgml-code-model c))))
+    (sgml-code-tokens (sgml-eltype-includes et))
+    (sgml-code-tokens (sgml-eltype-excludes et)))))
 
-(defun sgml-code-dtd (target)
-  "Produce the binary coding of the current DTD into the TARGET buffer."
-  (let ((elems sgml-buffer-eltype-map)
-	(params sgml-buffer-param-entities)
-	(entities sgml-buffer-entities)
-	(doctype sgml-buffer-doctype)
-	(cb (current-buffer)))
-    (set-buffer target)
-    (erase-buffer)
-    (insert
-     ";;; This file was created by psgml on " (current-time-string) "\n"
-     "(sgml-saved-dtd-version 2)\n")
-    (let ((tv-point (point))		; insert token vector here
-	  (done 0)			; count written elements
-	  (tot (length elems)))
-      (setq sgml-code-token-numbers nil)
-      (sgml-code-sequence (pair elems)
-	(setq done (1+ done))
-	(sgml-code-element (cdr pair))
-	(message "Coding %d%% done" (/ (* 100 done) tot)))
-      (sgml-code-sexp params)
-      (sgml-code-sexp entities)
-      (sgml-code-sexp doctype)
-      (goto-char tv-point)
-      (sgml-code-sexp
-       (loop for x in sgml-code-token-numbers
-	     vconcat (list (car x)))))
-    (set-buffer cb)))
+
+(defun sgml-code-dtd (dtd)
+  "Produce the binary coding of the current DTD into the current buffer."
+  (sgml-code-sexp (sgml-dtd-dependencies dtd))
+  (sgml-code-sexp (sgml-dtd-parameters dtd))
+  (sgml-code-sexp (sgml-dtd-doctype dtd))
+  (let ((done 0)			; count written elements
+	tot)
+    (setq sgml-code-token-numbers nil)
+    (sgml-code-token-number sgml-pcdata-token) ; Make #PCDATA token 0
+    (sgml-map-eltypes			; Assign numbers to all tokens
+     (function (lambda (et)
+		 (sgml-code-token-number (sgml-eltype-token et))))
+     dtd nil t)
+    (setq tot (length sgml-code-token-numbers))
+    ;; Produce the counted sequence of element type names
+    (sgml-code-sequence (pair (cdr sgml-code-token-numbers))
+      (sgml-code-sexp (sgml-eltype-name (car pair))))
+    ;; Produce the counted sequence of element types
+    (sgml-code-sequence (pair (cdr sgml-code-token-numbers))
+      (setq done (1+ done))
+      (sgml-code-element (car pair))
+      (sgml-lazy-message "Saving DTD %d%% done" (/ (* 100 done) tot)))
+    (sgml-code-sexp (sgml-dtd-entities dtd))
+    (sgml-code-sexp (sgml-dtd-shortmaps dtd))
+    (sgml-code-sexp (sgml-dtd-notations dtd))))
+
 
 ;;;; Save DTD
 
@@ -973,24 +900,26 @@ FORMS should produce the binary coding of element in VAR."
   (setq file (expand-file-name file))
   (when (equal file (buffer-file-name))
     (error "Would clobber current file"))
-  (unless sgml-buffer-eltype-map
-    (sgml-parse-prolog))
-  (cond ((equal (expand-file-name default-directory)
-		(file-name-directory file))
-	 (setq sgml-default-dtd-file (file-name-nondirectory file)))
-	(t
-	 (setq sgml-default-dtd-file file)))
-  (let ((tem (generate-new-buffer " *savedtd*"))
-	(cb (current-buffer)))
-    (unwind-protect
-	(progn
-	  (sgml-code-dtd tem)
-	  (set-buffer tem)
-	  (setq file-type 1)
-	  (write-region (point-min) (point-max) file)
-	  (set-buffer cb)
-	  (setq sgml-loaded-dtd file))
-      (kill-buffer tem))))
+  (sgml-need-dtd)
+  (sgml-push-to-entity (sgml-make-entity "#SAVE" nil ""))
+  (sgml-write-dtd sgml-dtd-info file)
+  (sgml-pop-entity)
+  (setq sgml-default-dtd-file
+	(if (equal (expand-file-name default-directory)
+		   (file-name-directory file))
+	    (file-name-nondirectory file)
+	  file))
+  (setq sgml-loaded-dtd file))
+
+(defun sgml-write-dtd (dtd file)
+  "Save the parsed dtd on FILE.
+Construct the binary coded DTD (bdtd) in the current buffer."
+  (insert
+   ";;; This file was created by psgml on " (current-time-string) "\n"
+   "(sgml-saved-dtd-version 6)\n")
+  (sgml-code-dtd dtd)
+  (setq file-type 1)
+  (write-region (point-min) (point-max) file))
 
 
 ;;; psgml-dtd.el ends here
