@@ -7,7 +7,7 @@
 @syncodeindex vr cp
 @synindex ky cp
 @c %**end of header
-@c $Id: psgml.texi,v 1.5 2002/04/19 07:48:31 lenst Exp $
+@c $Id: psgml.texi,v 1.8 2005/03/02 19:44:20 lenst Exp $
 
 @ifinfo
 @format
@@ -92,7 +92,7 @@ translation approved by the Free Software Foundation.
 @top PSGML
 
 PSGML is a major mode for editing SGML documents.  This is the DRAFT
-documentation for PSGML version 1.2.
+documentation for PSGML version 1.4.
 @end ifinfo
 
 @menu
@@ -105,7 +105,7 @@ documentation for PSGML version 1.2.
 * Managing the DTD::            Specifying what DTD to use
 * Edit::                        Commands for editing
 * Display::                     Appearance of text in the buffer
-* Miscellaneous options::        
+* Miscellaneous options::       
 * Bugs::                        Reporting bugs
 * Index::                       
 @end menu
@@ -540,6 +540,8 @@ Omitted start-tags for empty elements.
 @chapter SGML Declaration
 @cindex SHORTTAG
 @cindex OMITTAG
+@cindex NAMECASE GENERAL
+@cindex case sensitivity
 
 PSGML does not understand the SGML declaration, it accepts one in the
 file but it is ignored.  If you have the SGML declaration in another
@@ -558,6 +560,13 @@ to @code{nil} otherwise.
 @defopt sgml-shorttag
 Set this to @code{t} if the SGML declaration has @samp{SHORTTAG YES} and
 to @code{nil} otherwise.
+@end defopt
+
+@defopt sgml-namecase-general
+Set this to @code{t} if the SGML declaration has @samp{NAMECASE
+GENERAL YES} and to @code{nil} otherwise. I.e., this controls whether
+names, except entity names, will be case insensitive (translated to
+upper case).
 @end defopt
 
 @defopt sgml-always-quote-attributes
@@ -614,6 +623,7 @@ even if there are missing entities, it may even be empty).
 * Using a Split Document::      
 * Inserting a DOCTYPE::         
 * Information from the DTD::    
+* Customizing DTD::             
 @end menu
 
 
@@ -794,7 +804,7 @@ Example:
 
 
 @c ------------------------------------------------------------
-@node  Information from the DTD,  , Inserting a DOCTYPE, Managing the DTD
+@node  Information from the DTD, Customizing DTD, Inserting a DOCTYPE, Managing the DTD
 @comment  node-name,  next,  previous,  up
 @section Information from the DTD
 @cindex DTD
@@ -805,8 +815,8 @@ The following commands can be used via @kbd{M-x} and
 can also be found in the DTD menu.
 
 @table @code
-@findex sgml-general-dtd-info
-@item sgml-general-dtd-info
+@findex sgml-describe-dtd
+@item sgml-describe-dtd
 Display information about the current DTD.
 
 @findex sgml-describe-element-type
@@ -838,6 +848,74 @@ Will list all element types and where it can occur.
 @item sgml-list-content-elements
 Will list all element types and the element types that can occur
 in its content.
+@end table
+
+
+@c ---------------------------------------------------------------------------
+@node  Customizing DTD,  , Information from the DTD, Managing the DTD
+@comment  node-name,  next,  previous,  up
+@section Customizing DTD
+
+PSGML can be customized by process instructions starting with ``PSGML''
+in the DTD. Generally this associates some information with element
+types. E.g., if @code{sgml-fill-element} should skip the element type
+or if the content should be displayed with a special font.
+
+The general syntax is
+@display
+@samp{<?PSGML ELEMENT} @var{gi} (@var{prop} = @var{value})* @samp{>}
+@end display
+
+Note: in XML the ending delimiter is @samp{?>}, in SGML mode a
+trailing @samp{?} will be ignored if preceded by a space.
+
+Where @var{gi} is the element type, @var{prop} is a propery
+described below, and @var{value} is the value for the property. The
+first part from @samp{PSGML} to @var{gi} is read with current setting
+for @samp{NAMECASE GENERAL}, i.e., case insensitive for normal SGML
+but case sensitive in XML mode. The @var{prop} and @var{value} is read
+using Emacs Lisp conventions, i.e. case sensitive and @var{value} is a
+lisp expression (not evaluated).
+
+Example
+
+@example
+<?PSGML ELEMENT PRE nofill=t face=fixed-pitch>
+@end example
+
+Properties
+
+@table @code
+@item nofill
+Set to either @code{t} or @code{nil}. If @code{t} the elements of this
+type will be ignored when filling with @code{sgml-fill-element}.
+Note that Emacs normal filling functions will not honor this.
+
+@item font
+Set to the name of an Emacs face. Should be a face that exists in
+Emacs. E.g. @code{bold}, @code{italic}, @code{fixed-pitch}. The
+content of elements of this type will be displayed in that face.
+
+@item attnames
+Set to a list of attribute names. E.g., @code{attnames=("ID" "CLASS"
+"ONCLICK")}. This controls the attributes included when using the
+@code{sgml-edit-attributes} (@kbd{C-c C-a}) command. Only the
+attributes in the list will be included and in that order. You can
+also end the list with a @code{*} to include all attributes, but the
+listed attributes will be on the top. E.g.,
+@code{attnames=("ID" "CLASS" "ONCLICK" *)}.
+Note: that the attribute names need to be written with the correct
+case and in string quotes.
+
+@item structure
+Control if element is included in @code{sgml-show-structure} (@kbd{C-c
+C-s}). If set to @code{t}, the element is included and if set to
+@code{ignore} it will not be included. @xref{Information, Showing information}.
+
+@item help-text
+Should be a string. The string will be displayed by
+@code{sgml-show-current-element-type} (@kbd{C-c C-t}).
+
 @end table
 
 
@@ -1034,10 +1112,10 @@ attribute-value from the mini-buffer and inserts the attribute value
 pair.
 @end table
 
-@kindex S-@key{mouse-1}
+@kindex S-@key{mouse-3}
 A menu is also available directly with a mouse button click in the
 buffer.  In GNU Emacs it is the first mouse button combined with shift
-(@kbd{S-@key{mouse-1}}).  In Lucid Emacs it is bound to the third mouse
+(@kbd{S-@key{mouse-3}}).  In Lucid Emacs it is bound to the third mouse
 button.  The mouse button click will pop-up a menu of valid tags or a
 menu of attributes if the point is in a start-tag.  The attributes menu
 works as the ``Insert attribute'' menu from the menu-bar.  The tags list
@@ -1155,7 +1233,9 @@ Commands for showing information obtained by parsing the buffer.
 @findex sgml-show-context
 @item C-c C-c
 Shows in the message area: context at point, if in a tag or in mixed
-content and the open elements (@code{sgml-show-context}).
+content and the open elements (@code{sgml-show-context}). The form of
+the string is controled by the user option
+@code{sgml-show-context-function}.
 
 @kindex C-c C-w
 @findex sgml-what-element
@@ -1164,13 +1244,46 @@ Shows what element the character after point (under the cursor) belongs
 to; also shows context of element (@code{sgml-what-element}).
 
 @kindex C-c C-t
-@findex sgml-list-valid-tags
+@findex sgml-show-current-element-type
 @item C-c C-t
+Show information about the current element type and the valid element
+following the point.
+
+@kindex C-c C-s
+@findex sgml-show-structure
+@item C-c C-s
+Show the major element structure in a separate buffer (@samp{*Document
+structure*}). That buffer can be used to navigate the document, like
+an Occur buffer (@pxref{Other Repeating Search, , Other
+Search-and-Loop Commands, emacs, The Emacs Editor}). The structure
+shows container elements and the text of the first child element (if
+it is not a container). This works best for document types which uses
+containers and title structure (e.g. @samp{<div> <title>Heder</title>
+..</div>}). PSGML uses a heuristic rule to identify container
+elements: it should have element content and be non empty. You can
+configure exceptions from this rule using a process instruction in the
+DTD (@pxref{Customizing DTD}).
+
+To include an element type @var{el1} that would otherwise be excluded:
+@example
+<?PSGML element @var{el1} structure=t?>
+@end example
+
+To exclude an element type @var{el2} that would otherwise be included:
+@example
+<?PSGML element @var{el2} structure=ignore?>
+@end example
+
+@end table
+
+@findex sgml-list-valid-tags
 List contextually valid tags (@code{sgml-list-valid-tags}).  Displays
 information about current element, all valid end-tags, valid start-tags
 in current element, and start-tags valid at this point but in other
 elements together with the tags omitted.
-@end table
+
+@ignore
+*** This is no longer working
 
 You can make the mode-line display the name of the current open element
 by setting the @code{sgml-live-element-indicator} variable.  Setting
@@ -1183,6 +1296,16 @@ If non-nil, indicate current element in mode line.
 NOTE: Setting this implies that every command can cause a parse.  
 @end defopt
 
+@end ignore
+
+@defopt sgml-show-context-function
+The value shold be a function that generates a string from an element
+and the current markup type (if any). There are two ready made
+functions for this. The function @code{sgml-show-context-standard},
+the default, generates a string like @samp{#PCDATA in para in chapter
+in book}. The function @code{sgml-show-context-backslash} generates a
+string like @samp{book\chapter\para}.
+@end defopt
 
 
 @c --------------------------------------------------------------------------

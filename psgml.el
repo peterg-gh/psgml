@@ -1,5 +1,5 @@
 ;;; psgml.el --- SGML-editing mode with parsing support
-;; $Id: psgml.el,v 2.66 2002/08/13 10:51:25 lenst Exp $
+;; $Id: psgml.el,v 2.70 2005/03/02 19:44:04 lenst Exp $
 
 ;; Copyright (C) 1993-2002 Lennart Staflin
 ;; Copyright (C) 1992 Free Software Foundation, Inc.
@@ -52,7 +52,7 @@
 
 ;;; Code:
 
-(defconst psgml-version "1.3.1"
+(defconst psgml-version "1.3.2"
   "Version of psgml package.")
 
 (defconst psgml-maintainer-address "lenst@lysator.liu.se")
@@ -63,7 +63,7 @@
 (defvar sgml-debug nil)
 
 (defmacro sgml-debug (&rest x)
-  (list 'if 'sgml-debug (cons 'sgml-log-message x)))
+  (list 'if 'sgml-debug (cons 'message x)))
 
 
 ;;;; Variables
@@ -351,6 +351,9 @@ Setting this variable automatically makes it local to the current buffer.")
 Setting this variable automatically makes it local to the current buffer.")
 (make-variable-buffer-local 'sgml-indent-data)
 
+(defvar sgml-content-indent-function 'sgml-indent-according-to-level)
+(defvar sgml-attribute-indent-function 'sgml-indent-according-to-stag)
+
 
 (defun sgml-parse-colon-path (cd-path)
   "Explode a colon-separated list of paths into a string list."
@@ -547,6 +550,11 @@ See `compilation-error-regexp-alist'.")
 
 (defvar sgml-mode-map nil
   "Keymap for SGML mode")
+
+(defvar sgml-show-context-function
+  'sgml-show-context-standard
+  "*Function to called to show context of and element.
+Should return a string suitable form printing in the echo area.")
 
 (defconst sgml-file-options
   '(
@@ -852,15 +860,15 @@ as that may change."
 (define-key sgml-mode-map "\C-c\C-f\C-x" 'sgml-expand-element)
 (define-key sgml-mode-map "\C-c\C-i" 'sgml-add-element-to-element)
 (define-key sgml-mode-map "\C-c\C-k" 'sgml-kill-markup)
-(define-key sgml-mode-map "\C-c\C-l" 'sgml-show-or-clear-log)
 (define-key sgml-mode-map "\C-c\r"   'sgml-split-element)
 (define-key sgml-mode-map "\C-c\C-n" 'sgml-up-element)
 (define-key sgml-mode-map "\C-c\C-o" 'sgml-next-trouble-spot)
-(define-key sgml-mode-map "\C-c\C-p" 'sgml-parse-prolog)
+(define-key sgml-mode-map "\C-c\C-p" 'sgml-load-doctype)
 (define-key sgml-mode-map "\C-c\C-q" 'sgml-fill-element)
 (define-key sgml-mode-map "\C-c\C-r" 'sgml-tag-region)
-(define-key sgml-mode-map "\C-c\C-s" 'sgml-unfold-line)
-(define-key sgml-mode-map "\C-c\C-t" 'sgml-list-valid-tags)
+(define-key sgml-mode-map "\C-c\C-s" 'sgml-show-structure)
+;(define-key sgml-mode-map "\C-c\C-t" 'sgml-list-valid-tags)
+(define-key sgml-mode-map "\C-c\C-t" 'sgml-show-current-element-type)
 (define-key sgml-mode-map "\C-c\C-u\C-a" 'sgml-unfold-all)
 (define-key sgml-mode-map "\C-c\C-u\C-d" 'sgml-custom-dtd)
 (define-key sgml-mode-map "\C-c\C-u\C-e" 'sgml-unfold-element)
@@ -886,76 +894,61 @@ as that may change."
 ;;;; Menu bar
 
 (easy-menu-define
- sgml-dtd-menu sgml-mode-map "DTD menu"
- '("DTD"
-    ["Parse DTD"  sgml-parse-prolog t]
-    ("Insert DTD")
-    ("Info"
-     ["General DTD info"	sgml-general-dtd-info           t]
-     ["Describe element type"	sgml-describe-element-type	t]
-     ["Describe entity"		sgml-describe-entity		t]
-     ["List elements" 		sgml-list-elements 		t]
-     ["List attributes" 	sgml-list-attributes 		t]
-     ["List terminals" 		sgml-list-terminals 		t]
-     ["List content elements" 	sgml-list-content-elements 	t]
-     ["List occur in elements" 	sgml-list-occur-in-elements 	t]
-     )
-    "--"
-    ["Load Parsed DTD"  sgml-load-dtd t]
-    ["Save Parsed DTD"  sgml-save-dtd t]
-   ))
-
-(easy-menu-define
- sgml-view-menu sgml-mode-map "View menu"
- '("View"
-   ["Fold Element"	sgml-fold-element	t]
-   ["Fold Subelement"	sgml-fold-subelement	t]
-   ["Unfold Line"	sgml-unfold-line	t]
-   ["Unfold Element"	sgml-unfold-element	t]
-   ["Expand"		sgml-expand-element	t]
-   ["Fold Region"	sgml-fold-region	t]
-   ["Unfold All"	sgml-unfold-all		t]
-   ["Hide Tags"		sgml-hide-tags		t]
-   ["Hide Attributes"	sgml-hide-attributes	t]
-   ["Show All Tags"	sgml-show-tags		t]
-   ))
-
-
-(easy-menu-define
- sgml-markup-menu sgml-mode-map "Markup menu"
- '("Markup"
-   ["Insert Element"	sgml-element-menu	t]
-   ["Insert Start-Tag" sgml-start-tag-menu	t]
-   ["Insert End-Tag"	sgml-end-tag-menu	t]
-   ["End Current Element"	sgml-insert-end-tag t]
-   ["Tag Region"	sgml-tag-region-menu	t]
-   ["Insert Attribute"  sgml-attrib-menu	t]
-   ["Insert Entity"	sgml-entities-menu	t]
-   ["Add Element to Element"	sgml-add-element-menu	t]
-   ("Custom markup"   "---")
-   ))
-
-(easy-menu-define
- sgml-move-menu sgml-mode-map "Menu of move commands"
- '("Move"
-   ["Next trouble spot" sgml-next-trouble-spot t]
-   ["Next data field"   sgml-next-data-field   t]
-   ["Forward element"	sgml-forward-element t]
-   ["Backward element"  sgml-backward-element t]
-   ["Up element"	sgml-up-element t]
-   ["Down element"	sgml-down-element t]
-   ["Backward up element" sgml-backward-up-element t]
-   ["Beginning of element" sgml-beginning-of-element t]
-   ["End of element"	sgml-end-of-element t]
-   ))
-
-(easy-menu-define
- sgml-modify-menu sgml-mode-map "Menu of modification commands"
- '("Modify"
-   ["Normalize"			sgml-normalize	t]
-   ["Expand All Short References"	sgml-expand-all-shortrefs t]
-   ["Expand Entity Reference"	sgml-expand-entity-reference t]
+ sgml-main-menu sgml-mode-map "Main menu"
+ '("SGML"
+   ["Parse DTD"  sgml-parse-prolog t]
+   ("DTD Info"
+    ["General DTD info"	sgml-general-dtd-info           t]
+    ["Describe element type"	sgml-describe-element-type	t]
+    ["Describe entity"		sgml-describe-entity		t]
+    ["List elements" 		sgml-list-elements 		t]
+    ["List attributes" 	sgml-list-attributes 		t]
+    ["List terminals" 		sgml-list-terminals 		t]
+    ["List content elements" 	sgml-list-content-elements 	t]
+    ["List occur in elements" 	sgml-list-occur-in-elements 	t])
+   ("Insert Markup"
+    ["Insert Element"	sgml-element-menu	t]
+    ["Insert Start-Tag" sgml-start-tag-menu	t]
+    ["Insert End-Tag"	sgml-end-tag-menu	t]
+    ["End Current Element"	sgml-insert-end-tag t]
+    ["Tag Region"	sgml-tag-region-menu	t]
+    ["Insert Attribute"  sgml-attrib-menu	t]
+    ["Insert Entity"	sgml-entities-menu	t]
+    ["Add Element to Element"	sgml-add-element-menu	t]
+    ("Insert DTD")   
+    ("Custom markup"   "---"))
+   "--"
+   ["Show Context"	sgml-show-context t]
+   ["What Element"	sgml-what-element t]
+   ["List Valid Tags"	sgml-list-valid-tags t]
+   ["Validate"		sgml-validate t]
+   "--"
+   ("Move"
+    ["Next trouble spot" sgml-next-trouble-spot t]
+    ["Next data field"   sgml-next-data-field   t]
+    ["Forward element"	sgml-forward-element t]
+    ["Backward element"  sgml-backward-element t]
+    ["Up element"	sgml-up-element t]
+    ["Down element"	sgml-down-element t]
+    ["Backward up element" sgml-backward-up-element t]
+    ["Beginning of element" sgml-beginning-of-element t]
+    ["End of element"	sgml-end-of-element t])
+   ("View"
+    ["Fold Element"	sgml-fold-element	t]
+    ["Fold Subelement"	sgml-fold-subelement	t]
+    ["Unfold Line"	sgml-unfold-line	t]
+    ["Unfold Element"	sgml-unfold-element	t]
+    ["Expand"		sgml-expand-element	t]
+    ["Fold Region"	sgml-fold-region	t]
+    ["Unfold All"	sgml-unfold-all		t]
+    ["Hide Tags"		sgml-hide-tags		t]
+    ["Hide Attributes"	sgml-hide-attributes	t]
+    ["Show All Tags"	sgml-show-tags		t])
+   "--"
+   ["Normalize Document"        sgml-normalize	t]
    ["Normalize Element"		sgml-normalize-element t]
+   ["Expand All Short References" sgml-expand-all-shortrefs (not sgml-xml-p)]
+   ["Expand Entity Reference"	sgml-expand-entity-reference t]
    ["Make Character Reference"	sgml-make-character-reference t]
    ["Unmake Character Reference"	(sgml-make-character-reference t) t]
    ["Fill Element"		sgml-fill-element t]
@@ -967,20 +960,10 @@ as that may change."
    ["Trim and leave element"	sgml-trim-and-leave-element t]
    ["Decode Character Entities"  sgml-charent-to-display-char t]
    ["Encode Characters"		sgml-display-char-to-charent t]
-   )
- )
-
-(easy-menu-define
- sgml-main-menu sgml-mode-map "Main menu"
- '("SGML"
-   ["Reset Buffer"	normal-mode t]
-   ["Show Context"	sgml-show-context t]
-   ["What Element"	sgml-what-element t]
-   ["List Valid Tags"	sgml-list-valid-tags t]
-   ["Show/Hide Warning Log"  sgml-show-or-clear-log t]
-   ["Validate"		sgml-validate t]
+   "--"
    ("File Options"   "---")
    ("User Options"   "---")
+   ["Reset Buffer"	normal-mode t]
    ["Submit Bug Report"  sgml-submit-bug-report t]
    ))
 
@@ -1073,10 +1056,10 @@ as that may change."
 		(numberp button3))
       (local-set-key [button3] button3))
     (when sgml-custom-dtd
-      (easy-menu-change '("DTD") "Insert DTD"
+      (easy-menu-change '("SGML" "Insert Markup") "Insert DTD"
 			(sgml-compute-insert-dtd-items)))
     (when sgml-custom-markup
-      (easy-menu-change '("Markup") "Custom markup"
+      (easy-menu-change '("SGML" "Insert Markup") "Custom markup"
 			(sgml-compute-custom-markup-items))))
   nil)
 
@@ -1256,11 +1239,6 @@ All bindings:
 	    nil 'local)
   (run-hooks 'text-mode-hook 'sgml-mode-hook)
   (easy-menu-add sgml-main-menu)
-  (easy-menu-add sgml-modify-menu)
-  (easy-menu-add sgml-move-menu)
-  (easy-menu-add sgml-markup-menu)
-  (easy-menu-add sgml-view-menu)
-  (easy-menu-add sgml-dtd-menu)
   (sgml-build-custom-menus))
 
 ;; It would be nice to generalize the `auto-mode-interpreter-regexp'
@@ -1519,6 +1497,8 @@ and move to the line in the SGML document that caused it."
 (autoload 'sgml-load-dtd "psgml-parse" "Load a saved DTD from FILE." t)
 (autoload 'sgml-show-or-clear-log "psgml-parse" "Show the *SGML LOG* buffer if it is not showing, or clear and
 remove it if it is showing." t)
+(autoload 'sgml-load-doctype "psgml-parse" "Load the documents DTD.
+Either from parent document or by parsing the document prolog." t)
 (autoload 'sgml-parse-prolog "psgml-parse" "Parse the document prolog to learn the DTD." t)
 (autoload 'sgml-beginning-of-element "psgml-edit" "Move to after the start-tag of the current element.
 If the start-tag is implied, move to the start of the element." t)
@@ -1579,12 +1559,19 @@ after the first tag inserted." t)
 (autoload 'sgml-element-menu "psgml-edit" "Pop up a menu with valid elements and insert choice.
 If sgml-leave-point-after-insert is nil the point is left after the first
 tag inserted." t)
+(autoload 'sgml-add-element-menu "psgml-edit" nil t)
 (autoload 'sgml-start-tag-menu "psgml-edit" "Pop up a menu with valid start-tags and insert choice." t)
 (autoload 'sgml-end-tag-menu "psgml-edit" "Pop up a menu with valid end-tags and insert choice." t)
 (autoload 'sgml-tag-region-menu "psgml-edit" "Pop up a menu with valid elements and tag current region with the choice." t)
 (autoload 'sgml-entities-menu "psgml-edit" nil t)
 (autoload 'sgml-attrib-menu "psgml-edit" "Pop up a menu of the attributes of the current element
 \(or the element with start-tag before point)." t)
+(autoload 'sgml-right-menu "psgml-edit" "Pop up a menu with valid tags and insert the choosen tag.
+If the variable sgml-balanced-tag-edit is t, also inserts the
+corresponding end tag. If sgml-leave-point-after-insert is t, the point
+is left after the inserted tag(s), unless the element has som required
+content.  If sgml-leave-point-after-insert is nil the point is left
+after the first tag inserted." t)
 (autoload 'sgml-fill-element "psgml-edit" "Fill biggest enclosing element with mixed content.
 If current element has pure element content, recursively fill the
 subelements." t)
@@ -1617,6 +1604,8 @@ If called with a numeric argument, convert a character reference back
 to a normal character.  If called from a program, set optional
 argument INVERT to non-nil." t)
 (autoload 'sgml-expand-entity-reference "psgml-edit" "Insert the text of the entity referenced at point." t)
+(autoload 'sgml-trim-and-leave-element "psgml-edit" "Remove blanks at end of current element and move point to after element." t)
+(autoload 'sgml-edit-external-entity "psgml-edit" "Open	a new window and display the external entity at the point." t)
 (autoload 'sgml-complete "psgml-edit" "Complete the word/tag/entity before point.
 If it is a tag (starts with < or </) complete with valid tags.
 If it is an entity (starts with &) complete with declared entities.
@@ -1628,6 +1617,8 @@ If it is something else complete with ispell-complete-word." t)
 (autoload 'sgml-add-element-to-element "psgml-edit" "Add an element of type GI to the current element.
 The element will be added at the last legal position if FIRST is `nil',
 otherwise it will be added at the first legal position." t)
+(autoload 'sgml-show-current-element-type "psgml-edit" "Show information about the current element and its type." t)
+(autoload 'sgml-show-structure "psgml-edit" "Show the document structure in a separate buffer." t)
 (autoload 'sgml-save-dtd "psgml-dtd" "Save the parsed dtd on FILE." t)
 (autoload 'sgml-list-elements "psgml-info" "List the elements and their attributes in the current DTD." t)
 (autoload 'sgml-list-attributes "psgml-info" "List the attributes and in which elements they occur." t)
@@ -1636,7 +1627,7 @@ otherwise it will be added at the first legal position." t)
 (autoload 'sgml-list-occur-in-elements "psgml-info" "List all element types and where it can occur." t)
 (autoload 'sgml-describe-entity "psgml-info" "Describe the properties of an entity as declared in the current DTD." t)
 (autoload 'sgml-describe-element-type "psgml-info" "Describe the properties of an element type as declared in the current DTD." t)
-(autoload 'sgml-general-dtd-info "psgml-info" "Display information about the current DTD." t)
+(autoload 'sgml-describe-dtd "psgml-info" "Display information about the current DTD." t)
 (autoload 'sgml-charent-to-display-char "psgml-charent" "Replace character entities with their display character equivalents" t)
 (autoload 'sgml-display-char-to-charent "psgml-charent" "Replace displayable characters with their character entity equivalents" t)
 

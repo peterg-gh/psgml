@@ -1,5 +1,5 @@
 ;;;; psgml-parse.el --- Parser for SGML-editing mode with parsing support
-;; $Id: psgml-parse.el,v 2.88 2002/12/13 18:31:57 lenst Exp $
+;; $Id: psgml-parse.el,v 2.99 2005/02/27 17:13:07 lenst Exp $
 
 ;; Copyright (C) 1994, 1995, 1996, 1997, 1998 Lennart Staflin
 
@@ -32,6 +32,8 @@
 
 (require 'psgml)
 (require 'psgml-sysdep)
+(require 'psgml-ids)			; just for sgml-add-id
+
 
 ;;; Interface to psgml-dtd
 (eval-and-compile
@@ -57,6 +59,9 @@ value the auto-fill is inhibited.")
 
 
 ;;;; Variables
+
+(defvar sgml-psgml-pi-enable-outside-dtd nil)
+
 
 ;;; Hooks
 
@@ -150,7 +155,7 @@ short reference is `sgml-markup-start' and point.")
   "Function called with entity referenced at current point in parse.")
 
 (defvar sgml-pi-function nil
-  "Function called with parsed process instruction.")
+  "Function called with parsed processing instruction.")
 
 (defvar sgml-signal-data-function nil
   "Called when some data characters are conceptually parsed.
@@ -1245,7 +1250,7 @@ If DEPENDENCIES contains the symbol t, FILE is not considered newer."
 The dtd will be constructed with the parameter entities set according
 to ENTS.  The bdtd will be left in the current buffer.  The current
 buffer is assumed to be empty to start with."
-  (sgml-log-message "Recompiling DTD file %s..." dtd-file)
+  (message "Recompiling DTD file %s..." dtd-file)
   (let* ((sgml-dtd-info (sgml-make-dtd nil))
 	 (parameters (sgml-dtd-parameters sgml-dtd-info))
 	 (sgml-parsing-dtd t))
@@ -1255,6 +1260,7 @@ buffer is assumed to be empty to start with."
 	  do (sgml-entity-declare name parameters 'text val))
     (sgml-push-to-entity dtd-file)
     (sgml-check-dtd-subset)
+    (sgml-debug "sgml-compile-dtd: poping entity")
     (sgml-pop-entity)
     (erase-buffer)
     (sgml-write-dtd sgml-dtd-info to-file)
@@ -1270,7 +1276,7 @@ buffer is assumed to be empty to start with."
 					    params2)))
 		   (unless (or (null other)
 			       (equal entity other))
-		     (sgml-log-message
+		     (message
 		      "Parameter %s in compiled DTD has wrong value;\
  is '%s' should be '%s'"
 		      (sgml-entity-name entity)
@@ -1589,36 +1595,72 @@ in any of them."
         for et = (sgml-lookup-eltype name)
         do (setf (sgml-eltype-appdata et flagsym) t)
         (message "Defining element %s as %s" name flagsym)
-        (sgml-skip-cs)))
+        (sgml-parse-s)))
 
 (defun sgml-do-processing-instruction (in-declaration)
-  (let ((start (point)))
-    (when (and (eq ?P (following-char))
-	       (looking-at "PSGML +\\(\\sw+\\) *"))
+  (let ((start (point))
+        (psgml-pi (and (eq ?P (following-char))
+                       (looking-at "PSGML +\\(\\sw+\\) *"))))
+    (if sgml-xml-p
+	(sgml-skip-upto "XML-PIC")
+      (sgml-skip-upto "PIC"))
+    (let ((end (point)))
+      (if sgml-xml-p
+          (sgml-check-delim "XML-PIC")
+        (sgml-check-delim "PIC"))
+      (let ((next (point)))
+        (cond (psgml-pi
+               (goto-char start)
+               (sgml--pi-psgml-handler in-declaration end))
+              (sgml-pi-function
+               (funcall sgml-pi-function
+                        (buffer-substring-no-properties start end))))
+        (goto-char next))))
+  (unless in-declaration
+    (sgml-set-markup-type 'pi))
+  t)
+
+
+(defun sgml--pi-psgml-handler (in-declaration end)
+  (when (or in-declaration
+            sgml-psgml-pi-enable-outside-dtd)
+    (save-restriction
+      (narrow-to-region (point) end)
       (let* ((command (downcase (match-string 1)))
              (flag-command (assoc command
                                   '(("nofill"      . nofill)
                                     ("breakafter"  . break-after-stag)
                                     ("breakbefore" . break-before-stag)
                                     ("structure"   . structure)))))
-	(goto-char (match-end 0))
-	(cond (flag-command
+        (goto-char (match-end 0))
+        (cond (flag-command
                (sgml-parse-set-appflag (cdr flag-command)))
+              ((equal command "element")
+               (sgml--pi-element-handler))
               (t
                (sgml-log-warning "Unknown processing instruction for PSGML: %s"
-                                 command)))))
-    (if sgml-xml-p
-	(sgml-skip-upto "XML-PIC")
-      (sgml-skip-upto "PIC"))
-    (when sgml-pi-function
-      (funcall sgml-pi-function
-	       (buffer-substring-no-properties start (point)))))
-  (if sgml-xml-p
-      (sgml-check-delim "XML-PIC")
-    (sgml-check-delim "PIC"))
-  (unless in-declaration
-    (sgml-set-markup-type 'pi))
-  t)
+                                 command)))))))
+
+
+(defun sgml--pi-element-handler ()
+  (sgml-parse-s)
+  (let ((eltype (sgml-lookup-eltype (sgml-parse-name)))
+        name value)
+    (sgml-parse-s)
+    (while (setq name (sgml-parse-name))
+      ;; FIXME: check name not reserved
+      (sgml-parse-s)
+      (cond ((sgml-parse-delim "VI")
+             (sgml-parse-s)
+             (setq value
+                   (if (looking-at "['\"]")
+                       (sgml-parse-literal)
+                     (read (current-buffer)))))
+            (t
+             (setq value t)))
+      (message "%s = %S" name value)
+      (setf (sgml-eltype-appdata eltype (intern (downcase name))) value)
+      (sgml-parse-s))))
 
 
 ;;[lenst/1998-03-09 19:52:08]  Perhaps not the right place
@@ -2128,12 +2170,18 @@ Returns nil if entity is not found."
 	(let ((file (sgml-external-file extid type name)))
 	  (and file (insert-file-contents file)))
 	(progn
-	  (sgml-log-warning "External entity %s not found" name)
-	  (when pubid
-	    (sgml-log-warning "  Public identifier %s" pubid))
-	  (when sysid
-	    (sgml-log-warning "  System identifier %s" sysid))
+          (sgml-warn-external-entity-not-found name pubid sysid)
 	  nil))))
+
+(defun sgml-warn-external-entity-not-found (name pubid sysid)
+  (sgml-log-warning "External entity not found: %s%s%s"
+                    name                    
+                    (if pubid
+                        (format " PUBLIC \"%s\"" pubid)
+                      "")
+                    (if sysid
+                        (format " SYSTEM \"%s\"" sysid)
+                      "")))
 
 
 ;; Parse a buffer full of catalogue entries.
@@ -2475,11 +2523,6 @@ text.  Otherwise buffer position will be after entity reference."
 ENTITY can also be a file name.  Optional argument REF-START should be
 the start point of the entity reference.  Optional argument TYPE,
 overrides the entity type in entity look up."
-  (sgml-debug "Push to %s"
-	      (cond ((stringp entity)
-		     (format "string '%s'" entity))
-		    (t
-		     (sgml-entity-name entity))))
   (when ref-start
     ;; don't consider a RS shortref here again
     (setq sgml-rs-ignore-pos ref-start))
@@ -2487,6 +2530,7 @@ overrides the entity type in entity look up."
 	       (buffer-name sgml-scratch-buffer)
 	       ;; An existing buffer may have been left unibyte by
 	       ;; processing a cdtd.
+               ;; FIXME: looks strange, we haven't changed bufferw yet
 	       (sgml-set-buffer-multibyte t))
     (setq sgml-scratch-buffer (generate-new-buffer " *entity*")))
   (let ((cb (current-buffer))
@@ -2507,7 +2551,8 @@ overrides the entity type in entity look up."
     (erase-buffer)
     (sgml-set-buffer-multibyte 'default)
     (setq default-directory dd)
-    (make-local-variable 'sgml-current-file)
+    (set-visited-file-name nil t)
+    (set (make-local-variable 'sgml-current-file) nil)
     (make-local-variable 'sgml-current-eref)
     (setq sgml-current-eref eref)
     (set-syntax-table syntax-table)
@@ -2526,6 +2571,9 @@ overrides the entity type in entity look up."
     (cond
      ((stringp entity)			; a file name
       ;;(save-excursion ) test remove [lenst/1998-06-19 12:49:47]
+      (sgml-debug "Push to %s: FILE %s"
+                  (current-buffer) entity)
+
       (insert-file-contents entity)
       (setq sgml-current-file entity)
       ;; (goto-char (point-min)) ??
@@ -2539,7 +2587,7 @@ overrides the entity type in entity look up."
 	(when sgml-parsing-dtd
 	  (push (or file t)
 		(sgml-dtd-dependencies sgml-dtd-info)))
-	(sgml-debug "Push to %s = %s" extid file)
+	(sgml-debug "Push to %s: %s = %s" (current-buffer) extid file)
 	(cond
 	 ((and file sgml-parsing-dtd
 	       (sgml-try-merge-compiled-dtd (sgml-extid-pubid extid)
@@ -2563,21 +2611,22 @@ overrides the entity type in entity look up."
 		    ;; Mark entity as not found
                     (setf (sgml-entity-marked-undefined-p entity) t)
 		    (if sgml-warn-about-undefined-entities
-			(sgml-log-warning "External entity %s not found"
-					  (sgml-entity-name entity)))
-		    (when pubid
-		      (sgml-log-warning "  Public identifier %s" pubid))
-		    (when sysid
-		      (sgml-log-warning "  System identifier %s" sysid))
+			(sgml-warn-external-entity-not-found
+                         (sgml-entity-name entity) pubid sysid))
 		    nil))))))))
      (t ;; internal entity
+      (sgml-debug "Push to %s: string '%s'"
+                  (current-buffer) (sgml-entity-text entity))
       (save-excursion
 	(insert (sgml-entity-text entity)))))))
+
+
 
 (defun sgml-pop-entity ()
   (cond ((and (boundp 'sgml-previous-buffer)
 	      (bufferp sgml-previous-buffer))
-	 (sgml-debug "Exit entity")
+	 (sgml-debug "Exit entity %s => %s"
+                     (current-buffer) sgml-previous-buffer)
 	 (setq sgml-last-entity-buffer sgml-previous-buffer)
 	 (set-buffer sgml-previous-buffer)
 	 t)))
@@ -3236,14 +3285,6 @@ Where the latter represents end-tags."
       (setq sgml-log-last-size (save-excursion (set-buffer buf)
 					       (point-max))))))
 
-(defun sgml-log-warning (format &rest things)
-  (when sgml-throw-on-warning
-    (apply 'message format things)
-    (throw sgml-throw-on-warning t))
-  (when (or sgml-show-warnings sgml-parsing-dtd)
-    (apply 'sgml-message format things)
-    (apply 'sgml-log-message format things)))
-
 (defun sgml-log-message (format &rest things)
   (let ((mess (apply 'format format things))
 	(buf (get-buffer-create sgml-log-buffer-name))
@@ -3254,49 +3295,6 @@ Where the latter represents end-tags."
     (when (get-buffer-window buf)
       (setq sgml-log-last-size  (point-max)))
     (set-buffer cb)))
-
-(defun sgml-error (format &rest things)
-  (when sgml-throw-on-error
-    (throw sgml-throw-on-error nil))
-  (sgml-log-entity-stack)
-  (apply 'sgml-log-warning format things)
-  (apply 'error format things))
-
-(defun sgml-log-entity-stack ()
-  (save-excursion
-    (loop
-     do (sgml-log-message
-         "%s line %s col %s %s"
-         (or sgml-current-file (buffer-file-name) "-")
-         (count-lines (point-min) (point))
-         (current-column)
-         (let ((entity (if sgml-current-eref
-                           (sgml-eref-entity sgml-current-eref))))
-           (if (and entity (sgml-entity-type entity))
-               (format "entity %s" (sgml-entity-name entity))
-             "")))
-     while (and (boundp 'sgml-previous-buffer) sgml-previous-buffer)
-     do (set-buffer sgml-previous-buffer))))
-
-(defun sgml-parse-warning (format &rest things)
-  (sgml-log-entity-stack)
-  (apply 'sgml-log-warning format things))
-
-(defun sgml-parse-error (format &rest things)
-  (apply 'sgml-error
-	 (concat format "; at: %s")
-	 (append things (list (buffer-substring-no-properties
-			       (point)
-			       (min (point-max) (+ (point) 12)))))))
-
-(defun sgml-message (format &rest things)
-  (let ((buf (get-buffer sgml-log-buffer-name)))
-    (when (and buf
-	       (> (save-excursion (set-buffer buf)
-				  (point-max))
-		  sgml-log-last-size))
-      (sgml-display-log)))
-  (apply 'message format things))
 
 (defun sgml-reset-log ()
   (let ((buf (get-buffer sgml-log-buffer-name)))
@@ -3321,6 +3319,86 @@ clear and remove it if it is showing."
 	 (sgml-display-log))
 	(t
 	 (sgml-clear-log))))
+
+
+
+(defun sgml-log-entity-stack ()
+  (save-excursion
+    (loop
+     do (sgml-log-message
+         "%s line %s col %s %s"
+         (or sgml-current-file (buffer-file-name) "-")
+         (count-lines (point-min) (point))
+         (current-column)
+         (let ((entity (if sgml-current-eref
+                           (sgml-eref-entity sgml-current-eref))))
+           (if (and entity (sgml-entity-type entity))
+               (format "entity %s" (sgml-entity-name entity))
+             "")))
+     while (and (boundp 'sgml-previous-buffer) sgml-previous-buffer)
+     do (set-buffer sgml-previous-buffer))))
+
+
+
+(defvar sgml-warning-message-flag nil
+  "True if a warning message has been displayed.
+To avoid clearing message with out showing previous warning.")
+
+
+(defun sgml-log-warning (format &rest things)
+  (when sgml-throw-on-warning
+    (apply 'message format things)
+    (throw sgml-throw-on-warning t))
+  (when (or sgml-show-warnings sgml-parsing-dtd)
+    (apply 'sgml-message format things)
+    (setq sgml-warning-message-flag t)))
+
+
+(defun sgml-error (format &rest things)
+  (when sgml-throw-on-error
+    (throw sgml-throw-on-error nil))
+  (setq sgml-warning-message-flag nil)
+  (error "%s%s" (apply 'format format things )
+         (sgml-entity-stack)))
+
+
+(defun sgml-entity-stack-1 ()
+  (format
+   "\n %s line %s col %s %s%s"
+   (or sgml-current-file (buffer-file-name) "-")
+   (count-lines (point-min) (point))
+   (current-column)
+   (let ((entity (if sgml-current-eref
+                     (sgml-eref-entity sgml-current-eref))))
+     (if (and entity (sgml-entity-type entity))
+         (format "entity %s" (sgml-entity-name entity))
+       ""))
+   (if (and (boundp 'sgml-previous-buffer) sgml-previous-buffer)
+       (progn (set-buffer sgml-previous-buffer)
+              (sgml-entity-stack-1))
+     "")))
+
+(defun sgml-entity-stack ()
+  (save-excursion (sgml-entity-stack-1)))
+
+
+(defun sgml-parse-warning (format &rest things)
+  (message "%s%s" (apply 'format format things) (sgml-entity-stack))
+  (setq sgml-warning-message-flag t))
+
+(defun sgml-parse-error (format &rest things)
+  (apply 'sgml-error
+	 (concat format "; at: %s")
+	 (append things (list (buffer-substring-no-properties
+			       (point)
+			       (min (point-max) (+ (point) 12)))))))
+
+(defun sgml-message (format &rest things)
+  (unless (and (or (equal format "")
+                 (string-match "\\.\\.done$" format))
+             sgml-warning-message-flag)
+    (apply 'message format things)
+    (setq sgml-warning-message-flag nil)))
 
 
 
@@ -3541,11 +3619,13 @@ Assumes starts with point inside a markup declaration."
 	   (sgml-check-dtd-subset)
 	   (sgml-check-end-of-entity "DTD subset")
 	   (sgml-pop-entity)))
-;;;    (loop for map in sgml-dtd-shortmaps do
-;;;	  (sgml-add-shortref-map
-;;;	   (sgml-dtd-shortmaps sgml-dtd-info)
-;;;	   (car map)
-;;;	   (sgml-make-shortmap (cdr map))))
+    (when sgml-xml-p
+      (let ((table (sgml-dtd-entities sgml-dtd-info)))
+        (sgml-entity-declare "lt" table 'text "&#60;")
+        (sgml-entity-declare "gt" table 'text ">")
+        (sgml-entity-declare "amp" table 'text "&#38;")
+        (sgml-entity-declare "apos" table 'text "'")
+        (sgml-entity-declare "quot" table 'text "\"")))
     (sgml-set-initial-state sgml-dtd-info)
     (run-hooks 'sgml-doctype-parsed-hook)))
 
@@ -3732,6 +3812,9 @@ Returns a list of attspec (attribute specification)."
       ;; FIXME: What happens when eltype is nil ??
       (cond
        (attdecl
+	;; JDF's addition 12/2001
+	(if (eq (sgml-attdecl-declared-value attdecl) 'ID)
+	    (sgml-add-id val))
 	(push (sgml-make-attspec (sgml-attdecl-name attdecl) val)
 	      asl)
 	(when (sgml-default-value-type-p 'CONREF
@@ -3812,6 +3895,9 @@ VALUE is a string.  Returns nil or an attdecl."
 
 
 (defun sgml-load-doctype ()
+  "Load the documents DTD.
+Either from parent document or by parsing the document prolog."
+  (interactive)
   (cond
    ;; Case of doctype in another file
    ((or sgml-parent-document sgml-doctype)
@@ -3857,10 +3943,14 @@ VALUE is a string.  Returns nil or an attdecl."
     (when (consp (cdr modifier))	; There are "seen" elements
       (sgml-open-element et nil (point-min) (point-min))
       (loop for seenel in (cadr modifier)
-	    do (setq sgml-current-state
-		     (sgml-get-move sgml-current-state
+	    do (let ((new-state (sgml-get-move sgml-current-state
 				    (sgml-lookup-eltype
-                                     (sgml-general-case seenel)))))))
+                                     (sgml-general-case seenel)))))
+                 (unless new-state
+                   (error
+                    "Illegal has-seen-element in sgml-parent-document: %s"
+                    seenel))
+                 (setq sgml-current-state new-state)))))
   
   (let ((top (sgml-pstate-top-tree sgml-buffer-parse-state)))
     (setf (sgml-tree-includes top) (sgml-tree-includes sgml-current-tree))
@@ -3907,7 +3997,8 @@ VALUE is a string.  Returns nil or an attdecl."
 		       (and (sgml-parse-markup-declaration 'prolog)
 			    (null sgml-dtd-info)))))
      (unless sgml-dtd-info		; Set up a default doctype
-       (let ((docname (or sgml-default-doctype-name
+       (let ((docname (or (and sgml-default-doctype-name
+                               (sgml-general-case sgml-default-doctype-name))
 			  (if (sgml-parse-delim "STAGO" gi)
 			      (sgml-parse-name)))))
 	 (when docname
@@ -4010,13 +4101,9 @@ pointing to start of short ref and point pointing to the end."
 (defun sgml-do-move (token type)
   (cond ((eq sgml-any sgml-current-state))
         (t
-         (let ((next-state (sgml-get-move sgml-current-state token)))
-           (cond (next-state
-                  (setq sgml-current-state next-state))
-                 (t
-                  (sgml-execute-implied (sgml-list-implications token type) type)
-                  (unless (eq sgml-any sgml-current-state)
-                    (sgml-move-current-state token))))))))
+         (sgml-execute-implied (sgml-list-implications token type) type)
+         (unless (eq sgml-any sgml-current-state)
+           (sgml-move-current-state token)))))
 
 
 (defun sgml-pcdata-move ()

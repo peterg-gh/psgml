@@ -1,5 +1,5 @@
 ;;;; psgml-dtd.el --- DTD parser for SGML-editing mode with parsing support
-;; $Id: psgml-dtd.el,v 2.29 2002/04/25 20:50:27 lenst Exp $
+;; $Id: psgml-dtd.el,v 2.30 2003/03/25 19:46:09 lenst Exp $
 
 ;; Copyright (C) 1994 Lennart Staflin
 
@@ -309,9 +309,14 @@ Syntax: var dfa-expr &body forms"
 		   (sgml-error "Parameter literal unterminated")))
 	      ((sgml-parse-parameter-entity-ref))
 	      ((setq temp (sgml-parse-character-reference dofunchar))
-	       (setq value (concat value (if (< temp 256)
-					     (format "%c" temp)
-					   (format "&#%d;" temp)))))
+	       (setq value
+                     (concat value
+                             (cond ((< temp 256)
+                                    (if enable-multibyte-characters
+                                        (setq temp (unibyte-char-to-multibyte temp)))
+                                    (format "%c" temp))
+                                   (t
+                                    (format "&#%d;" temp))))))
 	      (t
 	       (setq value
 		     (concat value

@@ -1,6 +1,6 @@
 ;;;; psgml-info.el
 ;;; Last edited: 2000-11-09 19:23:50 lenst
-;;; $Id: psgml-info.el,v 2.15 2002/04/25 20:50:27 lenst Exp $
+;;; $Id: psgml-info.el,v 2.16 2005/02/27 17:12:05 lenst Exp $
 
 ;; Copyright (C) 1994, 1995 Lennart Staflin
 
@@ -423,7 +423,7 @@
 
 ;;;; Print general info about the DTD.
 
-(defun sgml-general-dtd-info ()
+(defun sgml-describe-dtd ()
   "Display information about the current DTD."
   (interactive)
   (sgml-need-dtd)
@@ -462,5 +462,9 @@
 		     (princ (format fmt hdr (sgml-entity-name entity)))
 		     (setq hdr ""))))
        (sgml-dtd-parameters sgml-dtd-info)))))
+
+
+(defalias 'sgml-general-dtd-info 'sgml-describe-dtd)
+
 
 ;;; psgml-info.el ends here

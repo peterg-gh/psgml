@@ -3,7 +3,7 @@
 ;; Copyright (C) 1996 Lennart Staflin
 
 ;; Author: Lennart Staflin <lenst@lysator.liu.se>
-;; Version: $Id: psgml-maint.el,v 1.7 2002/05/07 20:14:06 lenst Exp $
+;; Version: $Id: psgml-maint.el,v 1.8 2005/02/09 15:28:58 lenst Exp $
 ;; Keywords:
 
 ;;; This program is free software; you can redistribute it and/or modify
@@ -39,7 +39,8 @@
 
 (defconst psgml-common-files
   '("psgml.el" "psgml-parse.el" "psgml-edit.el" "psgml-dtd.el"
-    "psgml-info.el" "psgml-charent.el" "psgml-api.el" "psgml-sysdep.el"))
+    "psgml-info.el" "psgml-charent.el" "psgml-api.el" "psgml-sysdep.el"
+    "psgml-ids.el"))
 
 (defconst psgml-emacs-files '("psgml-other.el"))
 (defconst psgml-xemacs-files '("psgml-lucid.el"))
@@ -57,7 +58,7 @@
 (defun psgml-find-source-dir (&optional ask)
   (if psgml-source-dir
       t
-    (let ((cand (list "." "./psgml-1.3.0")))
+    (let ((cand (list "." "./psgml-1.3.2")))
       (while cand
 	(if (file-exists-p (expand-file-name "psgml-maint.el" (car cand)))
 	    (progn
