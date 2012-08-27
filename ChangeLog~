@@ -3,7 +3,7 @@
 	* psgml-debug.el, psgml-dtd.el:
 
 	Changed name of sgml-reduce-, to sgml-reduce-comma, as the ,
-	seemed to cause a Lisp reader error.
+	seemed to be responsible for a Lisp reader error.
 
 	* psgml-debug.el, psgml-dtd.el, psgml-lucid.el, psgml-parse.el, psgml.el: 
 
@@ -11,11 +11,6 @@
 	surrounding parentheses to new-style constructs, whether fatal
 	('foo) or non-fatal (' foo).
 
-	* psgml-parse.el, psgml.el:
-
-	Removed fatal (make-local-hook ...) statements, which were
-	redundant anyway, since the following (add-hook ...) statements
-	all submit the optional 'local' argument.
 
 2005-03-02  Lennart Staflin  <lenst@lysator.liu.se>
 

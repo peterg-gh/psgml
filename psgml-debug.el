@@ -367,7 +367,7 @@
 	  sgml-make-opt
 	  sgml-make-*
 	  sgml-make-+
-	  sgml-reduce-,
+	  sgml-reduce-comma  ;; formerly sgml-reduce-,
 	  sgml-reduce-|
 	  sgml-make-&
 	  sgml-make-conc
