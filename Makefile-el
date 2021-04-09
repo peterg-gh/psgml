@@ -1,22 +1,22 @@
+# Generated automatically from Makefile.in by configure.
 # Makefile.in 
 #
 # Makefile for the GNU Emacs lisp library, PSGML
 
-prefix = @prefix@
-datadir = @datadir@
-lispdir = @lispdir@
-infodir = @infodir@
-srcdir = @srcdir@
+prefix = /usr
+datadir = ${prefix}/share
+lispdir = $(prefix)/share/emacs/site-lisp
+infodir = /usr/share/info
+srcdir = .
 
-@SET_MAKE@
-EMACS = @EMACS@
+
+EMACS = /usr/bin/emacs
 XEMACS = xemacs
 
-VPATH = @srcdir@
 
 FLAGS = -batch -q -no-site-file -l ./psgml-maint.el
-INSTALL = @INSTALL@
-INSTALL_DATA = @INSTALL_DATA@
+INSTALL = /usr/bin/install -c
+INSTALL_DATA = ${INSTALL} -m 644
 SHELL = /bin/sh
 
 compile:

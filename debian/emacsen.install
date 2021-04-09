@@ -1,0 +1,70 @@
+#!/bin/bash
+#				-*- Mode: Sh -*- 
+# emacsen.install --- 
+# Author	   : Manoj Srivastava ( srivasta@tiamat.datasync.com ) 
+# Created On	   : Fri Apr  3 14:39:59 1998
+# Created On Node  : tiamat.datasync.com
+# Last Modified By : Manoj Srivastava
+# Last Modified On : Sat Dec  3 15:15:31 2005
+# Last Machine Used: glaurung.internal.golden-gryphon.com
+# Update Count	   : 48
+# Status	   : Unknown, Use with caution!
+# HISTORY	   : 
+# Description	   : 
+# 
+# arch-tag: 4d6d66e0-840b-46a1-84ba-6f8f48ea548e
+#
+
+set -e
+
+FLAVOUR=$1
+PACKAGE="=P"
+VERSION="=V"
+
+if [ "X$FLAVOUR" = "X" ]; then
+    echo Need argument to determine FLAVOUR of emacs;
+    exit 1
+fi
+
+if [ "X$PACKAGE" = "X" ]; then
+    echo Internal error: need package name;
+    exit 1;
+fi
+
+if [ "X$VERSION" = "X" ]; then
+    echo Internal error: need package version;
+    exit 1;
+fi
+
+ELDIR=/usr/share/emacs/site-lisp/$PACKAGE
+STARTDIR=/etc/emacs/site-start.d
+INFO_FILES="psgml-api.info psgml.info";
+STARTFILE="$PACKAGE-init.el";
+STAMPFILE=psgml-api.elc
+
+# Darn it, this may well change.
+EMACSB="$FLAVOUR -batch -l psgml-maint.el";
+
+case "$FLAVOUR" in
+    emacs)
+	cd $ELDIR
+	FLAVOURFILE=$(mktemp)
+	chmod 0644 $FLAVOURFILE
+	sed -e "s|=F|/usr/share/$FLAVOUR/site-lisp/$PACKAGE|" $STARTFILE > $FLAVOURFILE
+	install -p -d -o root -g root -m 755 $STARTDIR
+	ucf $FLAVOURFILE $STARTDIR/50$STARTFILE
+	ucfr $PACKAGE $STARTDIR/50$STARTFILE
+	rm $FLAVOURFILE
+	echo " done."
+	;;
+    *)
+	echo "install/$PACKAGE: Ignoring emacsen flavor $FLAVOUR."
+	;;
+esac
+
+exit 0
+
+
+### Local Variables:
+### mode: shell-script
+### End:

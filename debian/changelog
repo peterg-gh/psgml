@@ -1,0 +1,1043 @@
+psgml (1.4.0-12) unstable; urgency=medium
+
+  * Removed byte compilation and related code in emacsen.{install,remove}.
+    Unnecessary, simplifies greatly, resolves upgrade issue. (Closes: 986427)
+
+ -- Neil Roeth <neil@debian.org>  Thu, 08 Apr 2021 23:05:51 -0400
+
+psgml (1.4.0-11) unstable; urgency=medium
+
+  * Fixed bug where psgml-init.el was overwriting itself (Closes: 985265)
+  * Added current flavor of emacs to postrm so it removes/purges properly.
+
+ -- Neil Roeth <neil@debian.org>  Tue, 16 Mar 2021 21:16:01 -0400
+
+psgml (1.4.0-10) unstable; urgency=medium
+
+  * Avoid unnecessary install of compiled lisp whether or not make is
+    installed. (Closes: 984542)
+
+ -- Neil Roeth <neil@debian.org>  Sat, 13 Mar 2021 17:28:23 -0500
+
+psgml (1.4.0-9) unstable; urgency=medium
+
+  * Updated maintainer scripts to match Debian Emacs policy 5A and 5B regarding
+    install and remove
+  * Updated package dependencies to be consistent with Debian Emacs policy
+  * Updated Standards-Version to 4.5.1 (no changes to package)
+
+ -- Neil Roeth <neil@debian.org>  Sun, 03 Jan 2021 09:29:15 -0500
+
+psgml (1.4.0-8) unstable; urgency=medium
+
+  * Removed backup file ChangeLog~ and generated file Makefile.
+  * Replaced obsolete default-enable-multibye-characters
+  * Removed checks for ancient Emacs and psgml versions in postinst
+  * Updated debian/emacsen.{install,remove} to work properly after change
+    from flavors of emacs like emacs24 and emacs25 to single flavor called
+    just emacs. Split clean target in Makefile into clean-junk and clean-elc
+    for that purpose.
+  * Replaced obsolete function executing-macro with executing-kbd-macro
+  * Fixed infinite loop while processing DTD (Closes: #775463)
+  * Changed default value of sgml-validate-command to onsgmls
+
+ -- Neil Roeth <neil@debian.org>  Wed, 30 Dec 2020 16:43:44 -0500
+
+psgml (1.4.0-7.2) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Fix FTBFS due to malformed UTF-8 character (Closes: #952262):
+  - Applied patch for psgml.texi; thanks Claudio Saavedra.
+
+ -- Alberto Garcia <berto@igalia.com>  Wed, 21 Oct 2020 16:02:11 +0200
+
+psgml (1.4.0-7.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Switch to unversioned emacs package (Closes: #933319)
+
+ -- Gianfranco Costamagna <locutusofborg@debian.org>  Fri, 02 Aug 2019 12:46:15 +0200
+
+psgml (1.4.0-7) unstable; urgency=medium
+
+  * Added dependency on emacs25, dropped emacs23 and emacs-snapshot.
+
+ -- Neil Roeth <neil@debian.org>  Fri, 20 Jan 2017 07:35:15 -0500
+
+psgml (1.4.0-6) unstable; urgency=low
+
+  * Make build reproducible:
+  - Applied patch for local.mk; thanks Chris Lamb. (Closes: #777505).
+  - Applied patch for install_cmds.mk; thanks Valerie R Young (Closes: #847026).
+  * Removed explicit calls to install-info as required by policy.
+  * Updated Standards-Version to 3.9.8.0.
+
+ -- Neil Roeth <neil@debian.org>  Wed, 18 Jan 2017 19:01:58 -0500
+
+psgml (1.4.0-5) unstable; urgency=low
+
+  * Fixed typo: "determin" -> "determine" (Closes: #639220).
+  * Changed regexp for file extension from "\\.xml$" to "\\.xml\\'"
+    (Closes: #680702).
+
+ -- Neil Roeth <neil@debian.org>  Tue, 15 Oct 2013 08:00:28 -0400
+
+psgml (1.4.0-4) unstable; urgency=low
+
+  * Updated Standards-Version to 3.9.4.0.  No changes required.
+  * Fixed misspelling in prior changelog entry.
+
+ -- Neil Roeth <neil@debian.org>  Mon, 14 Oct 2013 18:22:00 -0400
+
+psgml (1.4.0-3) unstable; urgency=low
+
+  * Another if-Emacs-24 update - delete 50psgml-init.el in postrm when 
+    package is purged.
+  * Last version was accidentally built as a native package; reverted back
+    to non-native.
+
+ -- Neil Roeth <neil@debian.org>  Sun, 13 Oct 2013 10:32:26 -0400
+
+psgml (1.4.0-2) unstable; urgency=low
+
+  * Modified Emacs remove script so that it deletes compiled list files
+    when package is removed.
+  * New version no longer uses make-local-hook. (Closes: #669280).
+
+ -- Neil Roeth <neil@debian.org>  Sat, 12 Oct 2013 15:20:57 -0400
+
+psgml (1.4.0-1) unstable; urgency=low
+
+  * New upstream release - actually unofficial changes from
+    http://www.fsavigny.de/gpled-software/psgml-1.4.0.tar.gz
+    since psgml is not really being updated any more.
+  * Updates to work with Emacs 24. (Closes: #693432).
+  * New upstream version eliminates old style backquotes. (Closes: #669282).
+
+ -- Neil Roeth <neil@debian.org>  Thu, 10 Oct 2013 20:09:05 -0400
+
+psgml (1.3.2-14) unstable; urgency=low
+
+  * Check for existence of ucf and ucfr before calling in postrm
+    script. (Closes: #685467).
+
+ -- Neil Roeth <neil@debian.org>  Tue, 21 Aug 2012 23:24:41 -0400
+
+psgml (1.3.2-13) unstable; urgency=low
+
+  * Removed obsolete package sp from Recommends.
+  * Removed obsolete packages emacs22 and emacs21 from Depends.
+  * Policy 12.2: Removed installer script references to nonexistent
+    install-info-altdir and added dependency on dpkg | install-info.
+  * Updated Standards-Version to 3.9.2.0.
+
+ -- Neil Roeth <neil@debian.org>  Sat, 28 May 2011 15:47:15 -0400
+
+psgml (1.3.2-12) unstable; urgency=low
+
+  * Updated to include emacs23. (Closes: #541852).
+  * Updated psgml{,-api}.texi and regenerated info files in order to put
+    info into Emacs category of Info instead of Miscellaneous.
+  * Updated Standards-Version to 3.8.2.0, no changes required.
+
+ -- Neil Roeth <neil@debian.org>  Sun, 16 Aug 2009 17:49:30 -0400
+
+psgml (1.3.2-11) unstable; urgency=low
+
+  * Fix ucf handling of psgml-init.el file. (Closes: #516843).
+  * Do not create /etc/emacs<flavour> directories unless needed. (Closes:
+    #501827).
+
+ -- Neil Roeth <neil@debian.org>  Tue, 09 Jun 2009 22:43:58 -0400
+
+psgml (1.3.2-10) unstable; urgency=low
+
+  * Fix inadvertent dependency on autoconf introduced by closing
+    516840.  (Closes: #531899). Meet several conditions:
+  - Do not modify files shipped with package, Makefile and config.status
+    in /usr/share/emacs/site-lisp/psgml.
+  - If autoconf exists, use it to generate Makefile.
+  - If autoconf does not exist, use default Makefile shipped with package.
+
+ -- Neil Roeth <neil@debian.org>  Thu, 04 Jun 2009 21:29:35 -0400
+
+psgml (1.3.2-9) unstable; urgency=low
+
+  * Do not ship site-lisp/psgml/{Makefile,config.status}, they are
+    generated during byte-compilation.  (Closes: #516840).
+  * Updated to policy version 3.8.1.0; no changes
+  * Fixed lintian errors by removing unnecessary calls to install-docs in
+    postinst and prerm.
+
+ -- Neil Roeth <neil@debian.org>  Sun, 24 May 2009 10:33:58 -0400
+
+psgml (1.3.2-8) unstable; urgency=low
+
+  * New maintainer. Still useful to some of us! (Closes: #483642).
+  * Added missing build dependency on sharutils.
+  * Updated policy version, no changes.
+  * Fixed lintian errors:
+  - Made dependency on texi2html less specific.
+  - Fixed doc-base section.
+  - Removed postrm call to update-menus
+  - Reordered dependency on emacs so that emacs22 is first.
+  - Removed lintian override for description.
+  * Removed obsolete directories /usr/lib/sgml and /usr/local/lib/sgml
+    from various locations.
+
+ -- Neil Roeth <neil@debian.org>  Thu, 17 Jul 2008 21:29:44 -0400
+
+psgml (1.3.2-7) unstable; urgency=low
+
+  * Orphan this package. This is obsolete, there is no upstream
+    development of note, there have been two uploads since 2003, and the
+    last one was in 2005. The authors seem to have moved to nxml-ode,
+    which supersedes this package, and is included by default in modern
+    emacsen. 
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 29 May 2008 23:59:07 -0500
+
+psgml (1.3.2-6) unstable; urgency=low
+
+  * Bug fix: "psgml: depend on emacs22", thanks to Tommi Vainikainen
+                                                          (Closes: #424970).
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sat, 07 Jul 2007 13:03:23 -0500
+
+psgml (1.3.2-5) unstable; urgency=low
+
+  * Bug fix: "psgml-init.el does not set xml validate comand properly",
+    thanks to Ryo IGARASHI.                            (Closes: #413828).
+  * Bug fix: "/usr/share/emacs/site-lisp/psgml/psgml-edit.el: Typo in
+    sgml-insert-end-tag", thanks to Reuben Thomas       (Closes: #399952).
+  * Added debian/control variables XS-VCS-Arch and XS-VCS-Browse
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue, 17 Apr 2007 18:08:22 -0500
+
+psgml (1.3.2-4) unstable; urgency=low
+
+  * Make sure the package is not byte compiled twice, while ensuring that
+    byte compilation happens on upgrades and fresh installs.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sat,  3 Dec 2005 17:17:56 -0600
+
+psgml (1.3.2-3) unstable; urgency=low
+
+  * sgml-display-char-alist: No display char file: /usr/share/sgml/charsets/iso88591.map
+    This makes sgml-display-char-to-charent fail. Thanks to  LI Daobing.
+                                                              (Closes: #323879)
+  
+  * Extend support for the new emacs-snapshot package, Thanks to  LI Daobing.
+                                                              (Closes: #323880)
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed, 31 Aug 2005 12:29:40 -0500
+
+psgml (1.3.2-2) unstable; urgency=low
+
+  * Bug fix: "psgml: FTBFS: Cannot install docs", thanks to Daniel
+    Schepler                                                  (Closes: #318556).
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sat,  6 Aug 2005 09:59:19 -0500
+
+psgml (1.3.2-1) unstable; urgency=low
+
+  * New upstream release
+       ** Rename sgml-general-dtd-info to sgml-describe-dtd. Keep old name as
+          alias.
+       ** Made menus compact, only one top level menu.
+       ** Added new function sgml-show-structure (C-c C-s)
+         (May need latest emacs version (22))
+       ** Changed C-c C-t to sgml-show-current-element-type
+          New more comprehensive information display.
+       ** New mouse menu, sgml-right-menu on S-mouse-3 
+         If invoked on a start-tag will include entries to manipulate the
+         tag/element, including setting attributes. If invoked in content it
+         will be a menu of valid elements.
+       ** The <?PSGML> process instruction
+         Not new, but now documented and improved.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun,  1 May 2005 12:33:41 -0500
+
+psgml (1.3.1-13) unstable; urgency=low
+
+  * Bug fix: "psgml: speed up parsing when setting faces", thanks to Dave
+    Love. Dave's patch typically makes parsing several times faster in
+    Emacs if `sgml-set-face' is on.  It doesn't have any effect in XEmacs
+    or Emacs when sgml-set-face is nil. It also avoids some compilation
+    warnings and removes the setting of an unused variable outside the
+    package's name space.                               (Closes: #292867).
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 10 Feb 2005 20:37:18 -0600
+
+psgml (1.3.1-12) unstable; urgency=low
+
+  * psgml: fails to parse DocBook DTD with emacs21, thanks to
+    Marcus.Better@abc.se. See 
+    http://sourceforge.net/mailarchive/forum.php?thread_id=5080906&forum_id=4390
+    and http://list-archive.xemacs.org/xemacs-beta/200011/msg00117.html
+    for details                                                  (closes: Bug#283462)
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu,  2 Dec 2004 16:18:25 -0600
+
+psgml (1.3.1-11) unstable; urgency=low
+
+  *  Bug fix: "psgml: xml-mode ignores the variable
+    `sgml-xml-declaration'", thanks to Richard Lewis.   xml-mode
+    overwrites sgml-xml-validate-command with a hard coded value, but
+    sgml-xml-validate-command is supposed to be a user variable. This
+    makes it impossible to replace nsgml with onsgml (which you want to do
+    since nsgml gives a warning about xml.dcl containing large
+    numbers). This fix moves the hardcoded value from xml-mode to the
+    initial value of sgml-xml-validate-command.          (Closes: #274573). 
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue, 12 Oct 2004 22:00:17 -0500
+
+psgml (1.3.1-10) unstable; urgency=low
+
+  * Bug fix: "psgml: sgml-change-element-name errors", thanks to Hugo Haas
+                                                           (Closes: #263242).
+
+ -- Manoj Srivastava <srivasta@debian.org>  Fri, 13 Aug 2004 21:59:55 -0500
+
+psgml (1.3.1-9) unstable; urgency=low
+
+  * Bug fix: "psgml: PSGML uses obsolete path", thanks to Neil Roeth
+    Ensured that the new paths in /usr/local/share are also supported; but
+    did not remove the older paths from the search path, for now. 
+                                                         (Closes: #252540).
+  * Removed the obsolete needs="dwww" menu entry. Now we use the
+    preferred doc-base method.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue, 22 Jun 2004 23:41:40 -0500
+
+psgml (1.3.1-8) unstable; urgency=low
+
+  * Bug fix: "Half-broken dependency on emacs20", thanks to Martin
+    Michlmayr                                           (Closes: #232783).
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 16 Feb 2004 21:14:15 -0600
+
+psgml (1.3.1-7) unstable; urgency=low
+
+  * Bug fix: "psgml-sysdep.el missing", thanks to Didier Frick. I have no
+    idea why this file went missing -- especially if 1.3.1-5 worked
+    (Closes: #224045, #224203).
+  * Bug fix: "psgml: Cannot load file on parsing DTD", thanks to Rodrigo
+    Araujo (Closes: #224043).
+  * Bug fix: "psgml: Cannot load file on parsing DTD", thanks to Rodrigo
+    Araujo (Closes: #224046).
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 15 Dec 2003 10:28:18 -0600
+
+psgml (1.3.1-6) unstable; urgency=low
+
+  * Bug fix: "psgml: M-x html-mode gives error Cannot open load
+    file: psgml-html", thanks to Julian Gilbey. Added psgml-hrml to
+    psgml-maint.el.                                (Closes: #223792).
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sat, 13 Dec 2003 14:37:02 -0600
+
+psgml (1.3.1-5) unstable; urgency=low
+
+  * Moved to the new build system
+  * Bug fix: "psgml: sgml-xml-validate-command fails without /bin/sh",
+    thanks to Neil Spring (Closes: #222745).
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sat,  6 Dec 2003 18:51:40 -0600
+
+psgml (1.3.1-4) unstable; urgency=low
+
+  * Fixed usage of chown root.root in the rules files.
+  * Changed the rules file to also install psgml.html.      closes: Bug#211541
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun, 21 Sep 2003 14:48:07 -0500
+
+psgml (1.3.1-3) unstable; urgency=low
+
+  * Added suggestions for packages that provide the html DTD's -- namely,
+    w3c-dtd-xhtml and w3-dtd-mathml.                        closes: Bug#198150
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun,  6 Jul 2003 01:38:54 -0500
+
+psgml (1.3.1-2) unstable; urgency=low
+
+  * Added an example file to demonstrate customization values. 
+
+ -- Manoj Srivastava <srivasta@acm.org>  Thu, 20 Mar 2003 11:35:31 -0600
+
+psgml (1.3.1-1) unstable; urgency=low
+
+  * Remove obsolete emacs19 dir.                             closes: Bug#179681
+  * New upstream development version, better support for XML and catalogs.
+  * Removed most user customization style tweaks from psgml-init; people
+    should have the ability to set their own options. Hopefully this shall
+    fix the font-lock issue that people have.
+
+ -- Manoj Srivastava <srivasta@acm.org>  Sun,  9 Feb 2003 14:23:19 -0600
+
+psgml (1.2.5-4) unstable; urgency=low
+
+  * Make sure the ucf database is cleaned up on purge
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun, 10 Nov 2002 22:40:27 -0600
+
+psgml (1.2.5-3) unstable; urgency=low
+
+  * bash issues.                                             closes: Bug#167676
+  * make the log file readable                               closes: Bug#167723
+  * Fix a missing $ in the postinst. The ucf related noisiness shall go
+    away when ucf gets a little bit more mature.             closes: Bug#167248
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed,  6 Nov 2002 03:37:41 -0600
+
+psgml (1.2.5-2) unstable; urgency=low
+
+  * Removed fileutils from the dependencies.                 closes: Bug#161453
+  * No longer use faces that are not defined. I selected new faces that
+    are available with emacs -q on a debian box.             closes: Bug#153630
+  * Fixed the menuentry to point to /usr/share/doc           closes: Bug#159594
+  * Integrated patch from Dave Love. This fixes bugs setting
+    `sgml-validate-command' and `sgml-markup-faces', Turns on
+    `sgml-use-text-properties', and Delays things until psgml.el is
+    loaded, so you don't always load font-lock at startup, for instance.
+    It tests global-font-lock-mode' to decide whether to turn on
+    face-setting.  This has the disadvantage that you'd have to override
+    `sgml-set-face' in `sgml-mode-hook', but I think it's worth it to DTRT
+    better.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue, 29 Oct 2002 19:48:02 -0600
+
+psgml (1.2.5-1) unstable; urgency=low
+
+  * Use which instead of command -v.
+  * New upstream. 
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun, 16 Jun 2002 15:24:05 -0500
+
+psgml (1.2.4-9) unstable; urgency=low
+
+  * Well, the symbol could be bound, but still nil.          closes: Bug#146817
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 13 May 2002 09:22:14 -0500
+
+psgml (1.2.4-8) unstable; urgency=low
+
+  * Add the missing paren in the correct place. 
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 13 May 2002 04:09:37 -0500
+
+psgml (1.2.4-7) unstable; urgency=low
+
+  * Added a missing close paren.     closes: Bug#146467, Bug#146734, Bug#146613
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun, 12 May 2002 21:43:50 -0500
+
+psgml (1.2.4-6) unstable; urgency=medium
+
+  * In psgml-html, only set sgml-custom-dtd if it is unbound, and thus not
+    stopmp all over user set sgml-custom-dtd.                closes: Bug#145744
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue,  7 May 2002 15:38:46 -0500
+
+psgml (1.2.4-5) unstable; urgency=low
+
+  * Applied patch from Dave Love <d.love@dl.ac.uk> to fix problems with
+    multibyte DTD's. This should do the right thinkg in a unibyte
+    buffer. Upstream us aware of this patch.                 closes: Bug#137114
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed, 17 Apr 2002 13:20:27 -0500
+
+psgml (1.2.4-4) unstable; urgency=low
+
+  * psgml now recommends either sp or opensp, not both.      closes: Bug#142240
+
+ -- Manoj Srivastava <srivasta@debian.org>  Fri, 12 Apr 2002 15:10:10 -0500
+
+psgml (1.2.4-3) unstable; urgency=low
+
+  * Well, build depends are not mandatory. And for a binary all package,
+    which does not have to be rebuilt by buildds, not having build dpendds
+    at all would not cause problems anyway. However, since this is a good
+    thing in general, add it anyway.                         closes: Bug#139301
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 21 Mar 2002 22:11:22 -0600
+
+psgml (1.2.4-2) unstable; urgency=low
+
+  * debian-pkg-add-load-path-item apparently does not add the item to the
+    load path. This is different from the test function that Sam wrote,
+    and thuis the load-path was not set. Unfortunately, this bug was
+    masked on my box since emacs21 happiuly searches subdirs.
+                                                             closes: Bug#133426
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed, 20 Feb 2002 02:32:00 -0600
+
+psgml (1.2.4-1) unstable; urgency=low
+
+  * New upstream version, makes some of the patches official. This is a
+    stable, bug fixing release.  We now have an official fix for the
+    multibyte issue.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 14 Feb 2002 11:29:43 -0600
+
+psgml (1.2.2-16) unstable; urgency=low
+
+  * Preserve user changes in the site-start.d file. Also, do not delete
+    the start file when removed, only when purged. This also requires that
+    the start file do nothing when the package has actually been removed.
+  * Try and fix autoconf flags.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed, 13 Feb 2002 22:41:44 -0600
+
+psgml (1.2.2-15) unstable; urgency=low
+
+  * Patch from upstream to fix multibyte handling of DTD's.
+  * Allow emacs21 on a tty to still have faces handling, while maintaining
+    emacs20 compatibility. Also define the sgml faces unconditionally, and
+    require the font-lovk faces.                             closes: Bug#132481
+  * Provide support for onsgmls as the validate command, if nsgmls is not
+    isntalled.                                               closes: Bug#132482
+
+ -- Manoj Srivastava <srivasta@debian.org>  Fri,  8 Feb 2002 14:06:25 -0600
+
+psgml (1.2.2-14) unstable; urgency=low
+
+  * The el dir should only be removed when the package is being
+    deinstalled, and not when a flavour is being removed. This was a
+    really bad bug.                                          closes: Bug#132423
+  * Since emacs21 incorporates mule natively, and emacs19 is moribund,
+    this wishlist is no longer valid.                        closes: Bug#82306
+  
+ -- Manoj Srivastava <srivasta@debian.org>  Tue,  5 Feb 2002 03:33:26 -0600
+
+psgml (1.2.2-13) unstable; urgency=low
+
+  * Conform to the latest emacs policy about laod paths.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Fri,  1 Feb 2002 15:34:00 -0600
+
+psgml (1.2.2-12) unstable; urgency=low
+
+  * psgml-html.el should not change font-lock-variable-name-face or
+    font-lock-reference-name-face. Fixed. 
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue, 29 Jan 2002 19:06:55 -0600
+
+psgml (1.2.2-11) unstable; urgency=low
+
+  * The sgml-default-doctype-name needs to be all uppercase. This enables
+    us to find the external entity html when we open a file with no
+    DOCTYPE directive.                                       closes: Bug#131185
+  * Fixed problems with tempo in psgml-html.el
+  * Added /etc/sgml/catalog to the lsit fo catalog locations we know
+    about. May contribute to the bug fic for Bug#131185
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 28 Jan 2002 11:15:59 -0600
+
+psgml (1.2.2-10) unstable; urgency=low
+
+  * Reverted changes done to fix bug#109468. I'll reopen that report. 
+                                                 closes: Bug#118762, Bug#129160
+
+ -- Manoj Srivastava <srivasta@debian.org>  Fri, 18 Jan 2002 10:25:01 -0600
+
+psgml (1.2.2-9) unstable; urgency=low
+
+  * Fixed too many close parens in sgml-read-attribute-value in the
+    psgml-edit.el.  When did this creep in? How come no one noticed? 
+                                                             closes: Bug#128685
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 10 Jan 2002 23:20:22 -0600
+
+psgml (1.2.2-8) unstable; urgency=low
+
+  * Applied a patch from Toby Speight <streapadair@gmx.net> to maintain
+    separate histories for each type of attribute (and to give editable
+    default values).  Also, this bug report was a non bug,   closes: Bug#114227
+  * Fixed the emacsen.remove script to remove the init file on removal.
+                                                             closes: Bug#122650
+  * Fixed spelling in the description.                       closes: Bug#125274
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed,  9 Jan 2002 13:36:21 -0600
+
+psgml (1.2.2-7) unstable; urgency=low
+
+  * Fixed validation for XML files. The old way  inhibits the any other
+    catalog files from being read.                           closes: Bug#117105
+  * Do not unset multibyte flags for the buffer on emacs21; *perhaps* this
+    shall allow us to deal with non ascci XML files again, and help with
+    Bug#118762 
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 12 Nov 2001 14:28:54 -0600
+
+psgml (1.2.2-6) unstable; urgency=low
+
+  * Simply remove the ELCDIR on removal (there is no reason to have it
+    remain behind anyway).                                   closes: Bug#117105
+  * move references to /usr/lib/sgml to /usr/share/sgml      closes: Bug#115912
+  * {before,after}-change-function --> {before,after}-change-functions
+                                                             closes: Bug#113331
+  * Added a fix for MULE                                     closes: Bug#109468
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 29 Oct 2001 13:20:03 -0600
+
+psgml (1.2.2-5) unstable; urgency=low
+
+  * Changes made to the source to make psgml actually work for emacs21 by
+    Takuo KITAME. Thanks to Chris Wedgwood for bringing these changes to
+    my attention.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 19 Jul 2001 11:07:05 -0500
+
+psgml (1.2.2-4) unstable; urgency=low
+
+  * Change the control file so emacs21 can also satisfy the dependencies.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 12 Jul 2001 11:37:53 -0500
+
+psgml (1.2.2-3) unstable; urgency=low
+
+  * Added emacs21 in the emacsen install, remove scripts. closes: Bug#100294
+  * Follow the default emacs associations for html-mode. closes: Bug#101291
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed,  4 Jul 2001 13:51:40 -0500
+
+psgml (1.2.2-2) unstable; urgency=low
+
+  * Fixed typos identfier -> identifier. closes: Bug#88301
+  * No longer mention emacs19 in the control file. closes: Bug#82685
+  * Fixed typo of browse url function in psgml-html.el closes: Bug#92853
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun, 15 Apr 2001 23:11:23 -0500
+
+psgml (1.2.2-1) unstable; urgency=low
+
+  * New upstream source. This is supposed to be a major bug fix release.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun, 11 Feb 2001 12:02:04 -0600
+
+psgml (1.2.1-14) unstable; urgency=low
+
+  * http://www.w3.org/TR/NOTE-sgml-xml-971215
+    + The SGML declaration must be implied and cannot be explicitly present
+      in the document entity
+    I did not like the suggestion in the bug report about just pretending
+    that the document is SGML (yes, that would work, since XML is a SGML
+    subset), but sone things that are veariable in the SGML world are
+    fixed in XML, and we would have lost warnings about those. So I went
+    and changed the verify command to set the env vars that nsgmls
+    expects, and this should work now. closes: Bug#85005
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue,  6 Feb 2001 16:10:48 -0600
+
+psgml (1.2.1-13) unstable; urgency=low
+
+  * Fixed keymap in psgml-html mode. There were a few XEmacsims left
+    behind, and FSF Emacs equivalent functions were bound to the keys.
+  * browse-url-of-buffer used instead of nonexistent xemacs functions for
+    browsing using netscape. Both these are thanks to Patrick
+    Campbell-Preston <patrick@chaos.org.uk>. I am still working on the
+    HTML menus, which do not seem to be installed.
+  * Make sure all the cruft in the emacs directories is removed.
+  * emacs19 has been removed, so depends were updated. closes: 82685
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 29 Jan 2001 22:54:34 -0600
+
+psgml (1.2.1-12) unstable; urgency=low
+
+  * Added psgml-html.el  from XEmacs, since that has way more
+    functionality than the simple wrapper I wrote. closes: Bug#76781
+  * I have perhaps fixed the old external entity html not found bug. It
+    works for me, and closes: Bug#38284
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 20 Nov 2000 09:18:57 -0600
+
+psgml (1.2.1-11) unstable; urgency=low
+
+  * I have perhaps fixed the old external entity html not found bug. It
+    works for me, and closes: Bug#38284
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 14 Aug 2000 20:44:01 -0500
+
+psgml (1.2.1-10) unstable; urgency=low
+
+  * Also arrange to remove config.log and cofig.cache from the elc
+    dir. This closes: Bug#66695
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue,  4 Jul 2000 12:20:43 -0500
+
+psgml (1.2.1-9) frozen unstable; urgency=low
+
+  * Change the location of the XML decl from the bogus
+    /usr/lib/declaration/xml.dcl to the correct
+    /usr/lib/sgml/declaration/xml.dcl. closes: Bug#63892
+  * Remove support for XEmacs21, since that package comes with XEmacs
+    customized version of psgml. closes: Bug#63776
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed, 10 May 2000 16:37:51 -0500
+
+psgml (1.2.1-8) frozen unstable; urgency=low
+
+  * Changed the init file to not set HTML related propoerties (sgml-decl,
+    DTD's) while in XML mode. These are only set for sgml-html-mode
+    now. This makes XML editing feasible. closes: Bug#62111
+
+ -- Manoj Srivastava <srivasta@debian.org>  Fri, 14 Apr 2000 12:13:35 -0500
+
+psgml (1.2.1-7) frozen unstable; urgency=low
+
+  * Fix the order of dependencies around; emacs19 is now optional
+  * Added a dependency on fileutiles >=4.0, since the package would fail
+    to install with older fileutils.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 27 Mar 2000 12:36:14 -0600
+
+psgml (1.2.1-6) frozen unstable; urgency=low
+
+  * Fixed a bug in emacsen.install that was preventing installation on a
+    fresh install under some situations. This needs to go into potato,
+    else psgml may fail to isntall under some circumstances
+    closes: Bug#60309
+  * Use absolute links when related links would not work, for the
+    /usr/doc/ symlink.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed, 15 Mar 2000 09:48:48 -0600
+
+psgml (1.2.1-5) frozen unstable; urgency=high
+
+  * A recent change to the postinst whacked the compilation phase. This
+    fixes what would be an important bug.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon,  6 Mar 2000 16:01:14 -0600
+
+psgml (1.2.1-4) frozen unstable; urgency=low
+
+  * Fixed an upgrade bug when /usr/doc happens to be a symlink, and does
+    not point to /usr/share/doc. A couple of people were bitten by this.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 28 Feb 2000 22:27:05 -0600
+
+psgml (1.2.1-3) frozen unstable; urgency=low
+
+  * The postinst was vulnerable to being affected by symlinks (if, for
+    some reason, the prerm failed). This has happended for latex2html; and
+    created a grave bug.
+  * There was a bug in the postinst in a case statement, that caused
+    installation to fail for certain situations.
+  * Also fixed an lintian warning
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue,  8 Feb 2000 15:10:13 -0600
+
+psgml (1.2.1-2) frozen unstable; urgency=low
+
+  * Close all NMU foxed bugs. closes: Bug#47123, Bug#47330, Bug#47729
+    closes: Bug#47730, Bug#48558,  Bug#48667,  Bug#48715
+  * Updated the defaults for sgml-custom-dtd to non-deprecated
+    values. This closes: Bug#49697
+  * Remove the log files when the package is being removed, as well as a
+    small typo fix (thanks to "James R. Van Zandt" <jrv@vanzandt.mv.com>)
+    close: Bug#51930, Bug#51931, Bug#48983
+  * Moved install-docs to the end of the postinst, so that the symlink to
+    /usr/share/doc exists. closes: Bug#47680
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue, 25 Jan 2000 23:54:28 -0600
+
+psgml (1.2.1-1) unstable; urgency=low
+
+  * Merge the NMU's back into an officail upload (there were a few fixes
+    that were required).
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed,  1 Dec 1999 23:22:44 -0600
+
+psgml (1.2.1-0.2) unstable; urgency=high
+
+  * Horrible error when parsing catalogs fixed. (Prevented every
+    public identifier to be resolved.)
+
+ -- Stephane Bortzmeyer <bortzmeyer@debian.org>  Wed, 10 Nov 1999 15:05:22 +0100
+
+psgml (1.2.1-0.1) unstable; urgency=low
+
+  * Non-maintainer release
+  * New upstream release. Closes: #48558, #47330
+  * Clean up the horrible mess in the source of the Debian package
+  * Fix a small mistake in postinst. Closes: #48667
+
+ -- Stephane Bortzmeyer <bortzmeyer@debian.org>  Fri,  5 Nov 1999 13:21:39 +0100
+
+psgml (1.2.0-1) unstable; urgency=low
+
+  * New, stable, upstream release, almost no changes since 1.1.7.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue, 12 Oct 1999 14:15:59 -0500
+
+psgml (1.1.7-1.2) unstable; urgency=low
+
+  * NMU.  Add xemacs21 support
+
+ -- James LewisMoss <dres@debian.org>  Mon, 25 Oct 1999 19:27:09 -0400
+
+psgml (1.1.7-1.1) unstable; urgency=low
+
+  * NMU
+  * Correct doc-base /usr/doc -> /usr/share/doc (closes: #47729)
+
+ -- Julian Gilbey <jdg@debian.org>  Mon, 18 Oct 1999 16:53:59 +0100
+
+psgml (1.1.7-1) unstable; urgency=low
+
+  * Correct the location of the iso8859.map file in psgml-init.el. closes:
+    Bug#46854
+  * New upstream version incorporates Debian fix for  <foo/> "empty" xml
+    tag handling.  closes: Bug#39718
+  * Found a fix for having psgml recognize system identifiers. It used to
+    work before, but the method irt used to wirk was the side effect of a
+    bug. When the bug was fixed, psgml lost the ability to work with
+    explicit system identifies. The correct fix was to correctly configure
+    the variables, sgml-system-path, and sgml-public-map. closes: Bug#47092
+  * Moved to FHS compliance. Now, when sgml-base moves, we shall have to
+    change, but apart from that, the FHS move is done.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 11 Oct 1999 11:29:27 -0500
+
+psgml (1.1.6-6) unstable; urgency=low
+
+  * Added a fix to the sgml-tag-regexp to handle <foo/> "empty" xml
+    tags. This was reported as 39718, and has been forwarded upstream.
+  * Added xml-mode as the default mode for files with extension
+    .xml. closes: Bug#39675
+  * Actually ship iso88591.map, which closes: Bug#41000
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed, 14 Jul 1999 14:01:42 -0500
+
+psgml (1.1.6-5) unstable; urgency=low
+
+  * Fixed code to lookup the DTD files defined in the sgml catalog
+    file. closes: Bug#33418
+
+ -- Manoj Srivastava <srivasta@debian.org>  Fri, 14 May 1999 01:37:42 -0500
+
+psgml (1.1.6-4) unstable; urgency=low
+
+  * Added doc-base support.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sat, 27 Feb 1999 23:07:09 -0600
+
+psgml (1.1.6-3) frozen unstable; urgency=low
+
+  * There is no new code in this upload, so it should be OK for frozen
+  * Uncommented call to update-menu in postrm
+  * make sure that config.status is available for systems that do not have
+    autoconf. fixes: BUG#30496
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sat,  9 Jan 1999 13:44:52 -0600
+
+psgml (1.1.6-2) frozen unstable; urgency=low
+
+  * Fixed a problem with the remove/purge process in which the byte
+    compiled files would be left behind. Since psgml is in a bug fix mode,
+    and several XML related bugs have been fixed; and this remove/purge
+    bug fix should be justification to include in frozen.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed, 25 Nov 1998 11:45:40 -0600
+
+psgml (1.1.6-1) unstable; urgency=low
+
+  * New upstream release, with additional support for XML and newer
+    emacsen.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun, 22 Nov 1998 19:09:06 -0600
+
+psgml (1.1.4-3) unstable; urgency=low
+
+  * Tried to make the installation quieter.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue,  3 Nov 1998 21:41:21 -0600
+
+psgml (1.1.4-2) unstable; urgency=low
+
+  * Made psgml recognize the .shtml extension as .html; .shtml is used by
+    apache to recognize server-parsed html code.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 15 Oct 1998 02:18:36 -0500
+
+psgml (1.1.4-1) unstable; urgency=low
+
+  * New upstream bug fix release.
+  * Make sure the package can be installed despite the lack of
+    autoconf. closes: BUG#27521
+  * Tested some xml files. Could not reproduce bug 23313; I suppose this
+    got fixed in the last two upstream releases. closes: BUG#23313
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue, 13 Oct 1998 11:03:26 -0500
+
+psgml (1.1.3-2) unstable; urgency=low
+
+  * Fixed the location of the menu file, and removed an inadvetrtent
+    inclusion of the CVS directory. closes: BUG#26340
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed,  2 Sep 1998 13:47:37 -0500
+
+psgml (1.1.3-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun, 12 Jul 1998 22:59:08 -0500
+
+psgml (1.1.2-1) unstable; urgency=low
+
+  * New upstream version
+
+ -- Manoj Srivastava <srivasta@debian.org>  Fri, 26 Jun 1998 12:04:34 -0500
+
+psgml (1.1.1-1) unstable; urgency=low
+
+  * New upstream version, with support for XML.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed,  3 Jun 1998 15:20:35 -0500
+
+psgml (1.0.1-17) frozen unstable; urgency=low
+
+  * Made the install script compile the elc files even when we do not have
+    make. It is still better when make is available, but this may lead to
+    a lesser dependency on the make package (even without make, the
+    package is likely to be compiled).
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun, 19 Apr 1998 23:36:50 -0500
+
+psgml (1.0.1-16) unstable; urgency=low
+
+  *  Fixed broken path in psgml-init.el
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 16 Apr 1998 01:03:55 -0500
+
+psgml (1.0.1-15) frozen unstable; urgency=low
+
+  * BUG Fix: also remove from emacs20.
+  * Fix a lintian warning
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed, 15 Apr 1998 23:02:09 -0500
+
+psgml (1.0.1-14) frozen unstable; urgency=low
+
+  * BUG FIX:emacsen.remove: doo -> do
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed, 15 Apr 1998 22:39:45 -0500
+
+psgml (1.0.1-13) frozen unstable; urgency=low
+
+  * Converted to new emacsen standards. closes: Bug#21078
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 13 Apr 1998 23:39:05 -0500
+
+psgml (1.0.1-12) unstable; urgency=low
+
+  * Change the declaration location in accordance with new policy.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 19 Mar 1998 23:09:54 -0600
+
+psgml (1.0.1-11) unstable; urgency=low
+
+  * Made psgml depend on emacs. closes: Bug#19744
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon, 16 Mar 1998 14:23:56 -0600
+
+psgml (1.0.1-10) unstable; urgency=low
+
+  * Make psgml depend again on sp, and just sp. treied to shorten long
+    description in the menuentry.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed, 11 Mar 1998 14:20:08 -0600
+
+psgml (1.0.1-9) unstable; urgency=low
+
+  * Make it conflict with the old jade and sp, and suggest the new jade
+    package.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue, 10 Mar 1998 00:32:06 -0600
+
+psgml (1.0.1-8) unstable; urgency=low
+
+  * Mention that the GPL can be found on the file system.
+  * This fixes all lintian warnings again
+
+ -- Manoj Srivastava <srivasta@debian.org>  Fri, 13 Feb 1998 13:41:46 -0600
+
+psgml (1.0.1-7) unstable; urgency=low
+
+  * Fixed old FSF address in copyright file.
+  * Upgraded to standards version 2.4.0.0
+  * This should fix all known lintian reports.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon,  9 Feb 1998 14:07:29 -0600
+
+psgml (1.0.1-6) unstable; urgency=low
+
+  * Make sure the copyright file is not compressed. closes:Bug#14472
+  * Added example customization file to show how psgml can be customized.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed,  5 Nov 1997 13:00:42 -0600
+
+psgml (1.0.1-5) unstable; urgency=low
+
+  * Modified psgml-parse so that the default-directory is not set to
+    null. This should fix BUG#11916
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue, 19 Aug 1997 15:30:41 -0500
+
+psgml (1.0.1-4) unstable; urgency=low
+
+  * Mentioned that psgml is a standard package in XEmacs.
+  * Made the one line description more explicit.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Fri, 9 May 1997 15:38:00 -0500
+
+psgml (1.0.1-3) unstable; urgency=low
+
+  * Also depend on sgml-base
+  * Added explanation for the dependency to the description
+  * Added suggestion for other SGML provider packages
+
+ -- Manoj Srivastava <srivasta@debian.org>  Fri, 9 May 1997 15:08:17 -0500
+
+psgml (1.0.1-2) unstable; urgency=low
+
+  * Added a menu entry for the HTML documentation.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 8 May 1997 01:38:46 -0501
+
+psgml (1.0.1-1) unstable; urgency=low
+
+  * New upstream Source
+  * Excerpted changes:
+        * psgml-parse.el (sgml-modify-dtd): set sgml-current-tree to
+          sgml-top-tree. Needed by sgml-open-element.
+        * psgml.el (sgml-mode): modify mode-line-format with subst, don't
+          replicate the whole format in the code.
+        * psgml-parse.el (sgml-external-file): Try to find system
+          identifiers using the sgml-public-map
+          if sgml-system-identifiers-are-preferred; this way that flag will
+          have effect even if the sgml-public-map contains `'.
+          (sgml-final): moved to be defined before use.
+        * psgml-dtd.el (sgml-parse-parameter-literal): Try to handle
+          character references to character number above 255 by leaving a
+          character reference in then parsed entity text.
+        * psgml-other.el (sgml-set-face-for): Nullify
+          {after,before}-change-functions as well as (obsolete)
+          {after,before}-change-function.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sat, 5 Apr 1997 13:45:15 -0600
+
+psgml (1a12-2) unstable; urgency=low
+
+  * Made the priority optional.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue, 25 Feb 1997 21:28:41 -0600
+
+psgml (1a12-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun, 16 Feb 1997 00:41:51 -0600
+
+

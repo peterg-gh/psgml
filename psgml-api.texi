@@ -7,6 +7,7 @@
 @c $Id: psgml-api.texi,v 1.2 1999/12/03 17:29:39 lenst Exp $
 
 @ifinfo
+@dircategory Emacs editing modes
 @format
 START-INFO-DIR-ENTRY
 * PSGML-API: (psgml-api).  PSGML, the API documentation.

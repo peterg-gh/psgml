@@ -1,0 +1,67 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;; -*- Mode: Emacs-Lisp -*- ;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; This file has examples on how to customize psgml
+;;;
+;;; arch-tag: dfa1f019-e247-437b-871f-5371907f5053
+
+(setq-default sgml-indent-data t)
+(setq
+ sgml-always-quote-attributes t
+ sgml-auto-insert-required-elements t
+ sgml-auto-activate-dtd t
+ sgml-data-directory "/usr/share/sgml/declaration/"
+ sgml-indent-data t
+ sgml-indent-step             2
+ sgml-minimize-attributes     nil
+ sgml-omittag                 nil
+ sgml-shortag                 nil
+ sgml-custom-markup
+ '(("Version1" "<![%Version1[\r]]>")
+   ("New page"  "<?NewPage>"))
+ sgml-xml-declaration "/usr/share/sgml/declaration/xml.dcl"
+ sgml-display-char-list-filename "/usr/share/sgml/charsets/iso88591.map"
+ sgml-live-element-indicator t
+ sgml-public-map '("%S"  "/usr/share/sgml/%S" "/usr/share/sgml/%o/%c/%d"
+		   "/usr/local/share/sgml/%o/%c/%d")
+ sgml-system-path '("/usr/share/sgml" "/usr/share/sgml/cdtd"
+		    "/usr/local/share/sgml")
+ sgml-tag-region-if-active t
+ )
+
+(setq-default sgml-use-text-properties t)
+
+;; Set up the faces for markup
+(setq-default sgml-markup-faces
+	      '((start-tag . font-lock-keyword-face)
+		(end-tag . font-lock-keyword-face)
+		(ignored . font-lock-string-face)
+		(ms-start . font-lock-constant-face)
+		(ms-end . font-lock-constant-face)
+		(shortref . bold)
+		(entity . font-lock-type-face)
+		(comment . font-lock-comment-face)
+		(pi . font-lock-builtin-face)
+		(sgml . font-lock-function-name-face)
+		(doctype . font-lock-variable-name-face)))
+;; Turn on the markup based on whether font-lock would be on
+(eval-after-load "psgml"
+  '(lambda ()
+     (if (boundp 'global-font-lock-mode)
+         (if global-font-lock-mode
+	     (setq-default sgml-set-face t)
+           (setq-default sgml-set-face nil))
+       (setq-default sgml-set-face (eq 'x  window-system)))
+
+     (when (default-value 'sgml-set-face)
+       (require 'font-lock))
+     ;; Lots of overlays in a buffer is bad news since they have to
+     ;; be relocated on changes, with typically quadratic
+     ;; behaviour.
+     ))
+(add-hook 'html-mode-hook
+	  (lambda () (setq font-lock-defaults nil)))
+
+;; Alternately, to use font-lock-mode, expand on:
+;; (add-hook 'html-mode-hook
+;;	  (lambda () (make-local-variable 'sgml-set-face)
+;;                   (setq sgml-set-face nil)))

@@ -359,7 +359,7 @@ Applicable to XML.")
         ((and (boundp 'emacs-major-version) (>= emacs-major-version 20))
          (set-buffer-multibyte
           (if (eq flag 'default)
-              default-enable-multibyte-characters
+              (default-value 'enable-multibyte-characters)
             flag)))
 	((boundp 'MULE)
          (set 'mc-flag flag))
@@ -2532,7 +2532,7 @@ overrides the entity type in entity look up."
 	       ;; processing a cdtd.
                ;; FIXME: looks strange, we haven't changed bufferw yet
 	       (sgml-set-buffer-multibyte t))
-    (setq sgml-scratch-buffer (generate-new-buffer " *entity*")))
+    (setq-local sgml-scratch-buffer (generate-new-buffer " *entity*")))
   (let ((cb (current-buffer))
 	(dd default-directory)
         (syntax-table (syntax-table))
@@ -2545,19 +2545,16 @@ overrides the entity type in entity look up."
 			      (sgml-epos (point)))))
     (set-buffer sgml-scratch-buffer)
     (when (eq sgml-scratch-buffer (default-value 'sgml-scratch-buffer))
-      (make-local-variable 'sgml-scratch-buffer)
-      (setq sgml-scratch-buffer nil))
+      (setq-local sgml-scratch-buffer nil))
     (setq sgml-last-entity-buffer (current-buffer))
     (erase-buffer)
     (sgml-set-buffer-multibyte 'default)
     (setq default-directory dd)
     (set-visited-file-name nil t)
-    (set (make-local-variable 'sgml-current-file) nil)
-    (make-local-variable 'sgml-current-eref)
-    (setq sgml-current-eref eref)
+    (setq-local sgml-current-file nil)
+    (setq-local sgml-current-eref eref)
     (set-syntax-table syntax-table)
-    (make-local-variable 'sgml-previous-buffer)
-    (setq sgml-previous-buffer cb)
+    (setq-local sgml-previous-buffer cb)
     (setq sgml-xml-p xml-p)
     (setq sgml-rs-ignore-pos		; don't interpret beginning of buffer
 					; as #RS if internal entity.
@@ -2654,18 +2651,11 @@ overrides the entity type in entity look up."
   (while (sgml-pop-entity)))
 
 (defun sgml-cleanup-entities ()
-  (let ((cb (current-buffer))
-	(n 0))
-    (while (and sgml-scratch-buffer (buffer-name sgml-scratch-buffer))
-      (set-buffer sgml-scratch-buffer)
-      (assert (not (eq sgml-scratch-buffer
-		       (default-value 'sgml-scratch-buffer))))
-      (incf n))
-    (while (> n 10)
-      (set-buffer (prog1 sgml-previous-buffer
-		    (kill-buffer (current-buffer))))
-      (decf n))
-    (set-buffer cb)))
+  (let ((cb (current-buffer)))
+    (while (and sgml-scratch-buffer
+		(buffer-name sgml-scratch-buffer))
+      (set-buffer sgml-scratch-buffer))
+    (sgml-pop-all-entities)))
 
 (defun sgml-any-open-param/file ()
   "Return true if there currently is a parameter or file open."
@@ -2845,7 +2835,7 @@ overrides the entity type in entity look up."
 			 (point-min)))
 	(goto-char (or (next-single-property-change (point) 'invisible)
 		       (point-max)))))
-    (when (and (not executing-macro)
+    (when (and (not executing-kbd-macro)
 	       (or sgml-live-element-indicator
 		   sgml-set-face)
 	       (not (null sgml-buffer-parse-state))

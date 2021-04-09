@@ -1,0 +1,14 @@
+psgml for DEBIAN
+----------------------
+
+I know this package is not for everyone, it is often finicky, but I
+found it invaluable to writing correct HTML (and other SGML dtd based
+documents). 
+
+I had to make a change for Debian since /usr/lib/sgml/catalog is really a
+symlink for /etc/sgml.catalog; if we get the true name of the file, then
+the sgml data should lie under /etc/*, bur in reality it lies in
+/usr/lib/sgml/*. So we do not chase symlinks in parsing catalog files.
+
+Manoj Srivastava <srivasta@debian.org>, Sun, 16 Feb 1997 00:41:51 -0600
+arch-tag: 27d25c7f-2d44-45ca-b609-3549f6be43fd

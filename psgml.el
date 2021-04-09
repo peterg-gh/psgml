@@ -407,13 +407,17 @@ This variable is automatically local to the buffer.")
 (defvar sgml-catalog-files (or (delete nil
 				       (sgml-parse-colon-path
 					(getenv "SGML_CATALOG_FILES")))
-			       '("catalog" "/usr/local/lib/sgml/catalog"))
+			       '("catalog" "/etc/sgml/catalog"
+				 "/usr/lib/sgml/catalog"
+				 "/usr/local/share/sgml/catalog"
+				 "/usr/local/lib/sgml/catalog"))
   "*List of catalog entry files.
 The files are in the format defined in the SGML Open Draft Technical
 Resolution on Entity Management.")
 (put 'sgml-catalog-files 'sgml-type 'file-list)
 
-(defvar sgml-ecat-files '("ECAT" "~/sgml/ECAT" "/usr/local/lib/sgml/ECAT")
+(defvar sgml-ecat-files '("ECAT" "~/sgml/ECAT" "/usr/lib/sgml/ECAT"
+			  "/usr/local/share/sgml/ECAT" "/usr/local/lib/sgml/ECAT" )
   "*List of catalog files for PSGML.")
 (put 'sgml-ecat-files 'sgml-type 'file-list)
 
@@ -493,12 +497,11 @@ Example:
 (put 'sgml-fixed 'face 'underline)	; Face of #FIXED "..."
 
 
-;;; nsgmls is a free SGML parser in the SP suite available from
-;;; ftp.jclark.com:pub/sp
+;;; onsgmls is a free SGML parser
 ;;; Its error messages can be parsed by next-error.
 ;;; The -s option suppresses output.
 
-(defvar sgml-validate-command   "nsgmls -s %s %s"
+(defvar sgml-validate-command   "onsgmls -s %s %s"
   "*The shell command to validate an SGML document.
 
 This is a `format' control string that by default should contain two
@@ -521,7 +524,9 @@ string will be replaced according to the list below, if the string contains
 ")
 (make-variable-buffer-local 'sgml-validate-command)
 
-(defvar sgml-xml-validate-command "nsgmls -wxml -s %s %s"
+(defvar sgml-xml-validate-command
+  (concat "/bin/sh -c \"SP_CHARSET_FIXED=YES SP_ENCODING=XML "
+          "onsgmls -wxml -mdeclaration/xml.soc -gues %s %s\"")
   "*The default for `sgml-validate-command' in XML mode.")
 
 (defvar sgml-validate-files nil
@@ -1260,10 +1265,10 @@ Note that without a DTD, indenting lines will only work if
   (setq sgml-namecase-general nil)
   (setq sgml-minimize-attributes nil)
   (setq sgml-always-quote-attributes t)
-  (setq sgml-validate-command sgml-xml-validate-command)
   (make-local-variable 'sgml-declaration)
-  (setq sgml-declaration sgml-xml-declaration))
-
+  (setq sgml-declaration sgml-xml-declaration)
+  (setq sgml-validate-command sgml-xml-validate-command)
+  )
 
 (defun sgml-default-dtd-file ()
   (and (buffer-file-name)
@@ -1432,7 +1437,7 @@ start tag, and the second / is the corresponding null end tag."
 					     (1+ blinkpos))))))))))
 
 (eval-and-compile
-  (autoload 'compile-internal "compile" ""))
+  (autoload 'compilation-start "compile" ""))
 
 (defun sgml-default-validate-command ()
   (cond
@@ -1469,9 +1474,7 @@ and move to the line in the SGML document that caused it."
 			       nil nil 'sgml-validate-command-history)))
   (if sgml-offer-save
       (save-some-buffers nil nil))
-  (compile-internal command "No more errors" "SGML validation"
-		    nil
-		    sgml-validate-error-regexps))
+  (compilation-start command 'compilation-minor-mode nil sgml-validate-error-regexps))
 
 (defalias 'sgml-restore-buffer-modified-p
   (if (fboundp 'restore-buffer-modified-p)

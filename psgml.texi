@@ -10,7 +10,9 @@
 @c $Id: psgml.texi,v 1.8 2005/03/02 19:44:20 lenst Exp $
 
 @ifinfo
+@dircategory Emacs editing modes
 @format
+INFO-DIR-SECTION Emacs editing modes
 START-INFO-DIR-ENTRY
 * PSGML: (psgml).          PSGML, a major mode for SGML documents.
 END-INFO-DIR-ENTRY
@@ -1570,7 +1572,7 @@ Default: @code{t}.
 
 Set the variable @code{sgml-display-char-list-filename} to a file that
 contains mappings between all characters present in the presentation
-character set, and their "standard replacement text" names, e.g. "å"
+character set, and their "standard replacement text" names, e.g. "@U{00e5}"
 -> "[aring ]", e.t.c.
 
 The default value for this variable is `iso88591.map'. 
