@@ -18,3 +18,12 @@ for the Debian distribution at:
 
 The Debian package maintainers seem also to be the
 current maintainers of `psgml`.
+
+## Branches
+
+This repository has a single linear set of commits in
+three consecutive branches:
+
+*   `lysator` for sources taken from the original site.
+*   `debian` for sources taken from the Debian package.
+*   `main` for local modifications.
