@@ -3,7 +3,7 @@
 ## Summary
 
 This repository is a compilation of various releases of
-the EMACS LISP package 'psgml', which implements a DTD
+the EMACS LISP package `psgml`, which implements a DTD
 driven editing mode for SGML forms in EMACS, with fairly
 cool validation.
 
