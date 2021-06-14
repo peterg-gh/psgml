@@ -27,3 +27,8 @@ three consecutive branches:
 *   `lysator` for sources taken from the original site.
 *   `debian` for sources taken from the Debian package.
 *   `main` for local modifications.
+
+## Links
+
+* Some extensions for `psgml` 1.4.0:
+  https://hg.sr.ht/~nolda/psgml-utils
